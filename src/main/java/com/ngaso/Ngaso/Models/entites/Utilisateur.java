@@ -25,6 +25,7 @@ public abstract class Utilisateur {
     private String prénom;
     private String téléphone;
     private String adresse;
+    @Column(unique = true)
     private String email;
     private String password;
 
@@ -49,3 +50,4 @@ public abstract class Utilisateur {
     @OneToMany(mappedBy = "destinataire", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Notification> notifications = new ArrayList<>();
 }
+
