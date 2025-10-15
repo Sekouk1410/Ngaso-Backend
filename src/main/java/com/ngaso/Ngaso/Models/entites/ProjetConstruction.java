@@ -33,6 +33,10 @@ public class ProjetConstruction {
     @JoinColumn(name = "proprietaire_novice_id")
     private Novice proprietaire;
 
+    @ManyToOne
+    @JoinColumn(name = "demande_id")
+    private DemandeService demande;
+
     @OneToMany(mappedBy = "projet", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<EtapeConstruction> etapes = new ArrayList<>();
 }
