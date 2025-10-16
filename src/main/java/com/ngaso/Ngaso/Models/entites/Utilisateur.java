@@ -36,6 +36,9 @@ public abstract class Utilisateur {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    @Column(nullable = false)
+    private Boolean actif = true;
+
     @ManyToOne
     @JoinColumn(name = "administrateur_id")
     private Administrateur administrateur;

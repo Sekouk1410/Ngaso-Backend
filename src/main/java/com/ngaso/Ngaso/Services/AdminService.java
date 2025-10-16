@@ -81,7 +81,24 @@ public class AdminService {
                 u.getTelephone(),
                 u.getAdresse(),
                 u.getEmail(),
-                u.getRole()
+                u.getRole(),
+                u.getActif()
         );
+    }
+
+    public UtilisateurSummaryResponse disableUser(Integer id) {
+        Utilisateur u = utilisateurRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Utilisateur introuvable: " + id));
+        u.setActif(false);
+        Utilisateur saved = utilisateurRepository.save(u);
+        return toUserSummary(saved);
+    }
+
+    public UtilisateurSummaryResponse enableUser(Integer id) {
+        Utilisateur u = utilisateurRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Utilisateur introuvable: " + id));
+        u.setActif(true);
+        Utilisateur saved = utilisateurRepository.save(u);
+        return toUserSummary(saved);
     }
 }

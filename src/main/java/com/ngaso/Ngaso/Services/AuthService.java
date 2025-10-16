@@ -135,6 +135,9 @@ public class AuthService {
             String phone = request.getTelephone().trim();
             Utilisateur user = utilisateurRepository.findByTelephone(phone)
                     .orElseThrow(() -> new IllegalArgumentException("Identifiants invalides"));
+            if (Boolean.FALSE.equals(user.getActif())) {
+                throw new AccessDeniedException("Compte désactivé");
+            }
             if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
                 throw new IllegalArgumentException("Identifiants invalides");
             }
