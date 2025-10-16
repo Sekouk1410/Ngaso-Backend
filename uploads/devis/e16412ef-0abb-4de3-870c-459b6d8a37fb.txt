@@ -1,0 +1,205 @@
+package com.educonnect.service;
+
+import com.educonnect.dto.OrganisationDTO;
+import com.educonnect.dto.StatistiquesOrganisationDTO;
+import com.educonnect.exception.ResourceNotFoundException;
+import com.educonnect.exception.EmailDejaExistantException;
+import com.educonnect.model.Organisation;
+import com.educonnect.model.StatutOrganisation;
+import com.educonnect.model.TypeOrganisation;
+import com.educonnect.repository.OrganisationRepository;
+import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * Service pour la gestion des organisations
+ */
+@Service
+@Transactional
+public class OrganisationService {
+
+    private static final Logger logger = LoggerFactory.getLogger(OrganisationService.class);
+
+    @Autowired
+    private OrganisationRepository organisationRepository;
+
+    @Autowired
+    private ModelMapper modelMapper;
+
+    /**
+     * Créer une nouvelle organisation
+     */
+    public OrganisationDTO creerOrganisation(OrganisationDTO organisationDTO) {
+        logger.info("Création d'une nouvelle organisation: {}", organisationDTO.getNom());
+
+        // Vérifier si l'email existe déjà
+        if (organisationRepository.existsByEmail(organisationDTO.getEmail())) {
+            throw new EmailDejaExistantException("Une organisation avec cet email existe déjà");
+        }
+
+        Organisation organisation = modelMapper.map(organisationDTO, Organisation.class);
+        organisation.setStatut(StatutOrganisation.ACTIVE);
+
+        Organisation organisationSauvegardee = organisationRepository.save(organisation);
+        logger.info("Organisation créée avec succès avec l'ID: {}", organisationSauvegardee.getId());
+
+        return modelMapper.map(organisationSauvegardee, OrganisationDTO.class);
+    }
+
+    /**
+     * Obtenir une organisation par ID
+     */
+    @Transactional(readOnly = true)
+    public OrganisationDTO obtenirOrganisationParId(Long id) {
+        logger.debug("Recherche de l'organisation avec l'ID: {}", id);
+
+        Organisation organisation = organisationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Organisation non trouvée avec l'ID: " + id));
+
+        return modelMapper.map(organisation, OrganisationDTO.class);
+    }
+
+    /**
+     * Obtenir une organisation par email
+     */
+    @Transactional(readOnly = true)
+    public OrganisationDTO obtenirOrganisationParEmail(String email) {
+        logger.debug("Recherche de l'organisation avec l'email: {}", email);
+
+        Organisation organisation = organisationRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Organisation non trouvée avec l'email: " + email));
+
+        return modelMapper.map(organisation, OrganisationDTO.class);
+    }
+
+    /**
+     * Obtenir toutes les organisations avec pagination
+     */
+    @Transactional(readOnly = true)
+    public Page<OrganisationDTO> obtenirToutesLesOrganisations(Pageable pageable) {
+        logger.debug("Récupération de toutes les organisations avec pagination");
+
+        Page<Organisation> organisations = organisationRepository.findAll(pageable);
+        return organisations.map(org -> modelMapper.map(org, OrganisationDTO.class));
+    }
+
+    /**
+     * Rechercher des organisations
+     */
+    @Transactional(readOnly = true)
+    public Page<OrganisationDTO> rechercherOrganisations(String nom, TypeOrganisation type, 
+                                                        StatutOrganisation statut, Pageable pageable) {
+        logger.debug("Recherche d'organisations avec les critères: nom={}, type={}, statut={}", nom, type, statut);
+
+        Page<Organisation> organisations = organisationRepository.rechercherOrganisations(nom, type, statut, pageable);
+        return organisations.map(org -> modelMapper.map(org, OrganisationDTO.class));
+    }
+
+    /**
+     * Mettre à jour une organisation
+     */
+    public OrganisationDTO mettreAJourOrganisation(Long id, OrganisationDTO organisationDTO) {
+        logger.info("Mise à jour de l'organisation avec l'ID: {}", id);
+
+        Organisation organisation = organisationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Organisation non trouvée avec l'ID: " + id));
+
+        // Vérifier si le nouvel email existe déjà (sauf pour cette organisation)
+        if (!organisation.getEmail().equals(organisationDTO.getEmail()) && 
+            organisationRepository.existsByEmail(organisationDTO.getEmail())) {
+            throw new EmailDejaExistantException("Une organisation avec cet email existe déjà");
+        }
+
+        // Mettre à jour les champs
+        organisation.setNom(organisationDTO.getNom());
+        organisation.setType(organisationDTO.getType());
+        organisation.setDirecteur(organisationDTO.getDirecteur());
+        organisation.setEmail(organisationDTO.getEmail());
+        organisation.setTelephone(organisationDTO.getTelephone());
+        organisation.setAdresse(organisationDTO.getAdresse());
+        organisation.setDescription(organisationDTO.getDescription());
+
+        Organisation organisationMiseAJour = organisationRepository.save(organisation);
+        logger.info("Organisation mise à jour avec succès");
+
+        return modelMapper.map(organisationMiseAJour, OrganisationDTO.class);
+    }
+
+    /**
+     * Changer le statut d'une organisation
+     */
+    public OrganisationDTO changerStatutOrganisation(Long id, StatutOrganisation nouveauStatut) {
+        logger.info("Changement du statut de l'organisation {} vers {}", id, nouveauStatut);
+
+        Organisation organisation = organisationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Organisation non trouvée avec l'ID: " + id));
+
+        organisation.setStatut(nouveauStatut);
+        Organisation organisationMiseAJour = organisationRepository.save(organisation);
+
+        logger.info("Statut de l'organisation changé avec succès");
+        return modelMapper.map(organisationMiseAJour, OrganisationDTO.class);
+    }
+
+    /**
+     * Supprimer une organisation
+     */
+    public void supprimerOrganisation(Long id) {
+        logger.info("Suppression de l'organisation avec l'ID: {}", id);
+
+        if (!organisationRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Organisation non trouvée avec l'ID: " + id);
+        }
+
+        organisationRepository.deleteById(id);
+        logger.info("Organisation supprimée avec succès");
+    }
+
+    /**
+     * Obtenir les statistiques des organisations
+     */
+    @Transactional(readOnly = true)
+    public StatistiquesOrganisationDTO obtenirStatistiques() {
+        logger.debug("Calcul des statistiques des organisations");
+
+        List<Object[]> statistiques = organisationRepository.getStatistiquesParStatut();
+        
+        StatistiquesOrganisationDTO stats = new StatistiquesOrganisationDTO();
+        stats.setTotalOrganisations(organisationRepository.count());
+        
+        for (Object[] stat : statistiques) {
+            StatutOrganisation statut = (StatutOrganisation) stat[0];
+            Long count = (Long) stat[1];
+            
+            switch (statut) {
+                case ACTIVE -> stats.setOrganisationsActives(count);
+                case INACTIVE -> stats.setOrganisationsInactives(count);
+                case SUSPENDUE -> stats.setOrganisationsSuspendues(count);
+            }
+        }
+
+        return stats;
+    }
+
+    /**
+     * Obtenir les organisations par statut
+     */
+    @Transactional(readOnly = true)
+    public List<OrganisationDTO> obtenirOrganisationsParStatut(StatutOrganisation statut) {
+        logger.debug("Récupération des organisations avec le statut: {}", statut);
+
+        List<Organisation> organisations = organisationRepository.findByStatut(statut);
+        return organisations.stream()
+                .map(org -> modelMapper.map(org, OrganisationDTO.class))
+                .collect(Collectors.toList());
+    }
+}

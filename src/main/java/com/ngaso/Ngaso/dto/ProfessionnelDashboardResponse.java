@@ -13,6 +13,7 @@ public class ProfessionnelDashboardResponse {
     private long messagesNonLus;
 
     private List<String> realisations;
+    private List<ProjetBrief> derniersProjets;
 
     public String getPrenom() { return prenom; }
     public void setPrenom(String prenom) { this.prenom = prenom; }
@@ -34,4 +35,8 @@ public class ProfessionnelDashboardResponse {
 
     public List<String> getRealisations() { return realisations; }
     public void setRealisations(List<String> realisations) { this.realisations = realisations; }
+
+    public List<ProjetBrief> getDerniersProjets() { return derniersProjets; }
+    public void setDerniersProjets(List<ProjetBrief> derniersProjets) { this.derniersProjets = derniersProjets; }
 }
+
