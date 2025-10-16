@@ -42,6 +42,9 @@ public class AuthService {
         }
         Novice n = new Novice();
         n.setNom(request.getNom());
+        n.setPrenom(request.getPrenom());
+        n.setTelephone(request.getTelephone());
+        n.setAdresse(request.getAdresse());
         n.setEmail(request.getEmail());
         n.setPassword(passwordEncoder.encode(request.getPassword()));
         n.setRole(Role.Novice);
