@@ -24,7 +24,7 @@ public class AdminService {
 
     public Professionnel validateProfessionnel(Integer id) {
         Professionnel p = professionnelRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Professionnel introuvable: " + id));
+             .orElseThrow(() -> new IllegalArgumentException("Professionnel introuvable: " + id));
         p.setEstValider(true);
         return professionnelRepository.save(p); 
     }
