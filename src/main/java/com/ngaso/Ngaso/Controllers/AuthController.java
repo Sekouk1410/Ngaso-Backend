@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/auth")
@@ -26,9 +27,10 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.registerNovice(request));
     }
 
-    @PostMapping(value = "/register/professionnel", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<AuthLoginResponse> registerProfessionnel(@RequestBody ProfessionnelSignupRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(authService.registerProfessionnel(request));
+    @PostMapping(value = "/register/professionnel", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<AuthLoginResponse> registerProfessionnel(@RequestPart("data") ProfessionnelSignupRequest request,
+                                                                   @RequestPart("document") MultipartFile document) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.registerProfessionnel(request, document));
     }
 
     @PostMapping(value = "/login", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)

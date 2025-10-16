@@ -21,13 +21,9 @@ public class Professionnel extends Utilisateur {
     @Temporal(TemporalType.TIMESTAMP)
     private Date dateCréation;
 
-    @ManyToMany
-    @JoinTable(
-            name = "professionnel_specialite",
-            joinColumns = @JoinColumn(name = "professionnel_id"),
-            inverseJoinColumns = @JoinColumn(name = "specialite_id")
-    )
-    private Set<Specialite> specialites = new HashSet<>();
+    @ManyToOne
+    @JoinColumn(name = "specialite_id", nullable = false)
+    private Specialite specialite;
 
     @OneToMany(mappedBy = "professionnel")
     private List<DemandeService> demandes = new ArrayList<>();

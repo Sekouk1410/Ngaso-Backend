@@ -17,6 +17,6 @@ public class Specialite {
 
     private String libelle;
 
-    @ManyToMany(mappedBy = "specialites")
+    @OneToMany(mappedBy = "specialite")
     private Set<Professionnel> professionnels = new HashSet<>();
 }
