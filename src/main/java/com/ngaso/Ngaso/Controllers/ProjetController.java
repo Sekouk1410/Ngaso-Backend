@@ -22,6 +22,12 @@ public class ProjetController {
         return ResponseEntity.ok(projetService.createProjet(request));
     }
 
+    @PostMapping("/novices/{noviceId}")
+    public ResponseEntity<ProjetResponse> createForNovice(@PathVariable Integer noviceId,
+                                                          @RequestBody ProjetCreateRequest request) {
+        return ResponseEntity.ok(projetService.createProjetForNovice(noviceId, request));
+    }
+
     @GetMapping
     public ResponseEntity<List<ProjetResponse>> listByNovice(@RequestParam Integer noviceId) {
         return ResponseEntity.ok(projetService.listByNovice(noviceId));
@@ -32,3 +38,4 @@ public class ProjetController {
         return ResponseEntity.ok(projetService.getProjet(id));
     }
 }
+

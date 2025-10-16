@@ -77,6 +77,40 @@ public class ProjetService {
         return map(saved);
     }
 
+    public ProjetResponse createProjetForNovice(Integer noviceId, ProjetCreateRequest req) {
+        Novice proprietaire = noviceRepo.findById(noviceId)
+                .orElseThrow(() -> new IllegalArgumentException("Novice introuvable: " + noviceId));
+
+        ProjetConstruction p = new ProjetConstruction();
+        p.setTitre(req.getTitre());
+        p.setDimensionsTerrain(req.getDimensionsTerrain());
+        p.setBudget(req.getBudget());
+        p.setLocalisation(req.getLocalisation());
+        p.setEtat(EtatProjet.En_Cours);
+        p.setDateCréation(new Date());
+        p.setProprietaire(proprietaire);
+
+        ProjetConstruction saved = projetRepo.save(p);
+
+        // Initialiser les étapes à partir des modèles
+        List<ModeleEtape> modeles = modeleEtapeRepo.findAll();
+        modeles.sort((a, b) -> Integer.compare(
+                a.getOrdre() == null ? Integer.MAX_VALUE : a.getOrdre(),
+                b.getOrdre() == null ? Integer.MAX_VALUE : b.getOrdre()
+        ));
+
+        for (ModeleEtape m : modeles) {
+            EtapeConstruction etape = new EtapeConstruction();
+            etape.setProjet(saved);
+            etape.setModele(m);
+            etape.setEstValider(false);
+            etapeRepo.save(etape);
+            saved.getEtapes().add(etape);
+        }
+
+        return map(saved);
+    }
+
     @Transactional(readOnly = true)
     public List<ProjetResponse> listByNovice(Integer noviceId) {
         return projetRepo.findByProprietaire_Id(noviceId)
