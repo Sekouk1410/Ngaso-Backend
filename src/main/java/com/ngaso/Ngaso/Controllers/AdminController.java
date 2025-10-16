@@ -50,4 +50,14 @@ public class AdminController {
     public ResponseEntity<List<UtilisateurSummaryResponse>> listUtilisateurs() {
         return ResponseEntity.ok(adminService.listAllUsers());
     }
+
+    @PostMapping("/utilisateurs/{id}/disable")
+    public ResponseEntity<UtilisateurSummaryResponse> disableUser(@PathVariable Integer id) {
+        return ResponseEntity.ok(adminService.disableUser(id));
+    }
+
+    @PostMapping("/utilisateurs/{id}/enable")
+    public ResponseEntity<UtilisateurSummaryResponse> enableUser(@PathVariable Integer id) {
+        return ResponseEntity.ok(adminService.enableUser(id));
+    }
 }

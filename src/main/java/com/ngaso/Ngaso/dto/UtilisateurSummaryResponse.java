@@ -18,4 +18,5 @@ public class UtilisateurSummaryResponse {
     private String adresse;
     private String email;
     private Role role;
+    private Boolean actif;
 }
