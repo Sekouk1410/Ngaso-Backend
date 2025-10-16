@@ -1,19 +1,25 @@
 package com.ngaso.Ngaso.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class ProfessionnelSignupRequest {
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProfessionnelSummaryResponse {
+    private Integer id;
     private String nom;
     private String prenom;
     private String telephone;
     private String adresse;
     private String email;
-    private String password;
     private String entreprise;
     private String description;
-    private String document_justificatif;
+    private Boolean estValider;
+    private String documentJustificatif;
     private Integer specialiteId;
+    private String specialiteLibelle;
 }

@@ -2,10 +2,12 @@ package com.ngaso.Ngaso.Services;
 
 import com.ngaso.Ngaso.DAO.ProfessionnelRepository;
 import com.ngaso.Ngaso.Models.entites.Professionnel;
+import com.ngaso.Ngaso.dto.ProfessionnelSummaryResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -18,8 +20,24 @@ public class AdminService {
     }
 
     @Transactional(readOnly = true)
-    public List<Professionnel> listPendingProfessionnels() {
-        return professionnelRepository.findByEstValider(false);
+    public List<ProfessionnelSummaryResponse> listPendingProfessionnels() {
+        return professionnelRepository.findByEstValider(false)
+                .stream()
+                .map(p -> new ProfessionnelSummaryResponse(
+                        p.getId(),
+                        p.getNom(),
+                        p.getPrenom(),
+                        p.getTelephone(),
+                        p.getAdresse(),
+                        p.getEmail(),
+                        p.getEntreprise(),
+                        p.getDescription(),
+                        p.getEstValider(),
+                        p.getDocumentJustificatif(),
+                        p.getSpecialite() != null ? p.getSpecialite().getId() : null,
+                        p.getSpecialite() != null ? p.getSpecialite().getLibelle() : null
+                ))
+                .collect(Collectors.toList());
     }
 
     public Professionnel validateProfessionnel(Integer id) {
