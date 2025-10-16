@@ -37,8 +37,7 @@ public class AuthService {
     public AuthService(UtilisateurRepository utilisateurRepository,
                        NoviceRepository noviceRepository,
                        ProfessionnelRepository professionnelRepository,
-                       AdministrateurRepository administrateurRepository) {
-                       ProfessionnelRepository professionnelRepository,
+                       AdministrateurRepository administrateurRepository,
                        SpecialiteRepository specialiteRepository) {
         this.utilisateurRepository = utilisateurRepository;
         this.noviceRepository = noviceRepository;
@@ -93,15 +92,32 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public AuthLoginResponse login(AuthLoginRequest request) {
-        Utilisateur user = utilisateurRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("Identifiants invalides"));
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new IllegalArgumentException("Identifiants invalides");
+        // Admin: login via email + password (normalize input)
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            String email = request.getEmail().trim().toLowerCase();
+            Administrateur admin = administrateurRepository.findByEmailIgnoreCase(email)
+                    .orElseThrow(() -> new IllegalArgumentException("Identifiants invalides"));
+            if (!passwordEncoder.matches(request.getPassword(), admin.getPassword())) {
+                throw new IllegalArgumentException("Identifiants invalides");
+            }
+            return new AuthLoginResponse(admin.getId(), Role.Admin, "Connexion réussie");
         }
-        if (user instanceof Professionnel p && Boolean.FALSE.equals(p.getEstValider())) {
-            throw new AccessDeniedException("Compte professionnel non validé");
+
+        // Utilisateurs (Novice/Professionnel): login via telephone + password (normalize input)
+        if (request.getTelephone() != null && !request.getTelephone().isBlank()) {
+            String phone = request.getTelephone().trim();
+            Utilisateur user = utilisateurRepository.findByTelephone(phone)
+                    .orElseThrow(() -> new IllegalArgumentException("Identifiants invalides"));
+            if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+                throw new IllegalArgumentException("Identifiants invalides");
+            }
+            if (user instanceof Professionnel p && Boolean.FALSE.equals(p.getEstValider())) {
+                throw new AccessDeniedException("Compte professionnel non validé");
+            }
+            return new AuthLoginResponse(user.getId(), user.getRole(), "Connexion réussie");
         }
-        return new AuthLoginResponse(user.getId(), user.getRole(), "Connexion réussie");
+
+        throw new IllegalArgumentException("Fournissez email (admin) ou telephone (utilisateur)");
     }
 }
 
