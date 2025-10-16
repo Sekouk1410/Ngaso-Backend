@@ -42,8 +42,8 @@ public class ProfessionnelDashboardService {
         long messagesNonLus = messageRepository.countUnreadForProfessionnel(professionnelId);
 
         ProfessionnelDashboardResponse resp = new ProfessionnelDashboardResponse();
-        resp.setPrenom(p.getPrénom());
-        resp.setMessageBienvenue("Bienvenue, " + p.getPrénom() + " !");
+        resp.setPrenom(p.getPrenom());
+        resp.setMessageBienvenue("Bienvenue, " + p.getPrenom() + " !");
         resp.setPropositionsEnAttente(propositionsEnAttente);
         resp.setPropositionsValidees(propositionsValidees);
         resp.setDemandesTotal(demandesTotal);

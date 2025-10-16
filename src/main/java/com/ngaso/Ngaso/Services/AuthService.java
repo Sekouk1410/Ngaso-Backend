@@ -3,9 +3,11 @@ package com.ngaso.Ngaso.Services;
 import com.ngaso.Ngaso.DAO.NoviceRepository;
 import com.ngaso.Ngaso.DAO.ProfessionnelRepository;
 import com.ngaso.Ngaso.DAO.UtilisateurRepository;
+import com.ngaso.Ngaso.DAO.AdministrateurRepository;
 import com.ngaso.Ngaso.Models.entites.Novice;
 import com.ngaso.Ngaso.Models.entites.Professionnel;
 import com.ngaso.Ngaso.Models.entites.Utilisateur;
+import com.ngaso.Ngaso.Models.entites.Administrateur;
 import com.ngaso.Ngaso.Models.enums.Role;
 import com.ngaso.Ngaso.dto.AuthLoginRequest;
 import com.ngaso.Ngaso.dto.AuthLoginResponse;
@@ -25,14 +27,17 @@ public class AuthService {
     private final UtilisateurRepository utilisateurRepository;
     private final NoviceRepository noviceRepository;
     private final ProfessionnelRepository professionnelRepository;
+    private final AdministrateurRepository administrateurRepository;
     private final BCryptPasswordEncoder passwordEncoder;
 
     public AuthService(UtilisateurRepository utilisateurRepository,
                        NoviceRepository noviceRepository,
-                       ProfessionnelRepository professionnelRepository) {
+                       ProfessionnelRepository professionnelRepository,
+                       AdministrateurRepository administrateurRepository) {
         this.utilisateurRepository = utilisateurRepository;
         this.noviceRepository = noviceRepository;
         this.professionnelRepository = professionnelRepository;
+        this.administrateurRepository = administrateurRepository;
         this.passwordEncoder = new BCryptPasswordEncoder();
     }
 
@@ -72,14 +77,29 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public AuthLoginResponse login(AuthLoginRequest request) {
-        Utilisateur user = utilisateurRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("Identifiants invalides"));
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new IllegalArgumentException("Identifiants invalides");
+        // Admin: login via email + password
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            Administrateur admin = administrateurRepository.findByEmail(request.getEmail())
+                    .orElseThrow(() -> new IllegalArgumentException("Identifiants invalides"));
+            if (!passwordEncoder.matches(request.getPassword(), admin.getPassword())) {
+                throw new IllegalArgumentException("Identifiants invalides");
+            }
+            return new AuthLoginResponse(admin.getId(), Role.Admin, "Connexion réussie");
         }
-        if (user instanceof Professionnel p && Boolean.FALSE.equals(p.getEstValider())) {
-            throw new AccessDeniedException("Compte professionnel non validé");
+
+        // Utilisateurs (Novice/Professionnel): login via telephone + password
+        if (request.getTelephone() != null && !request.getTelephone().isBlank()) {
+            Utilisateur user = utilisateurRepository.findByTelephone(request.getTelephone())
+                    .orElseThrow(() -> new IllegalArgumentException("Identifiants invalides"));
+            if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+                throw new IllegalArgumentException("Identifiants invalides");
+            }
+            if (user instanceof Professionnel p && Boolean.FALSE.equals(p.getEstValider())) {
+                throw new AccessDeniedException("Compte professionnel non validé");
+            }
+            return new AuthLoginResponse(user.getId(), user.getRole(), "Connexion réussie");
         }
-        return new AuthLoginResponse(user.getId(), user.getRole(), "Connexion réussie");
+
+        throw new IllegalArgumentException("Fournissez vos identifiants pour vous connecter");
     }
 }
