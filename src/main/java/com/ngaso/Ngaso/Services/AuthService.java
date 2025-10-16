@@ -16,8 +16,9 @@ import com.ngaso.Ngaso.dto.NoviceSignupRequest;
 import com.ngaso.Ngaso.dto.ProfessionnelSignupRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.access.AccessDeniedException;
+import com.ngaso.Ngaso.security.JwtService;
 
 import java.util.Date;
 import java.util.HashSet;
@@ -32,19 +33,23 @@ public class AuthService {
     private final ProfessionnelRepository professionnelRepository;
     private final SpecialiteRepository specialiteRepository;
     private final AdministrateurRepository administrateurRepository;
-    private final BCryptPasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
     public AuthService(UtilisateurRepository utilisateurRepository,
                        NoviceRepository noviceRepository,
                        ProfessionnelRepository professionnelRepository,
                        AdministrateurRepository administrateurRepository,
-                       SpecialiteRepository specialiteRepository) {
+                       SpecialiteRepository specialiteRepository,
+                       PasswordEncoder passwordEncoder,
+                       JwtService jwtService) {
         this.utilisateurRepository = utilisateurRepository;
         this.noviceRepository = noviceRepository;
         this.professionnelRepository = professionnelRepository;
         this.administrateurRepository = administrateurRepository;
         this.specialiteRepository = specialiteRepository;
-        this.passwordEncoder = new BCryptPasswordEncoder();
+        this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
     }
 
     public AuthLoginResponse registerNovice(NoviceSignupRequest request) {
@@ -60,7 +65,7 @@ public class AuthService {
         n.setPassword(passwordEncoder.encode(request.getPassword()));
         n.setRole(Role.Novice);
         Novice saved = noviceRepository.save(n);
-        return new AuthLoginResponse(saved.getId(), saved.getRole(), "Inscription réussie");
+        return new AuthLoginResponse(saved.getId(), saved.getRole(), "Inscription réussie", null);
     }
 
     public AuthLoginResponse registerProfessionnel(ProfessionnelSignupRequest request, org.springframework.web.multipart.MultipartFile document) {
@@ -108,7 +113,7 @@ public class AuthService {
                 .orElseThrow(() -> new IllegalArgumentException("Spécialité introuvable"));
         p.setSpecialite(spec);
         Professionnel saved = professionnelRepository.save(p);
-        return new AuthLoginResponse(saved.getId(), saved.getRole(), "Inscription réussie");
+        return new AuthLoginResponse(saved.getId(), saved.getRole(), "Inscription réussie", null);
     }
 
     @Transactional(readOnly = true)
@@ -121,7 +126,8 @@ public class AuthService {
             if (!passwordEncoder.matches(request.getPassword(), admin.getPassword())) {
                 throw new IllegalArgumentException("Identifiants invalides");
             }
-            return new AuthLoginResponse(admin.getId(), Role.Admin, "Connexion réussie");
+            String token = jwtService.generateToken(admin.getId(), Role.Admin.name());
+            return new AuthLoginResponse(admin.getId(), Role.Admin, "Connexion réussie", token);
         }
 
         // Utilisateurs (Novice/Professionnel): login via telephone + password (normalize input)
@@ -135,7 +141,8 @@ public class AuthService {
             if (user instanceof Professionnel p && Boolean.FALSE.equals(p.getEstValider())) {
                 throw new AccessDeniedException("Compte professionnel non validé");
             }
-            return new AuthLoginResponse(user.getId(), user.getRole(), "Connexion réussie");
+            String token = jwtService.generateToken(user.getId(), user.getRole().name());
+            return new AuthLoginResponse(user.getId(), user.getRole(), "Connexion réussie", token);
         }
 
         throw new IllegalArgumentException("Fournissez email (admin) ou telephone (utilisateur)");

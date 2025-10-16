@@ -1,8 +1,11 @@
 package com.ngaso.Ngaso.Services;
 
 import com.ngaso.Ngaso.DAO.ProfessionnelRepository;
+import com.ngaso.Ngaso.DAO.UtilisateurRepository;
 import com.ngaso.Ngaso.Models.entites.Professionnel;
+import com.ngaso.Ngaso.Models.entites.Utilisateur;
 import com.ngaso.Ngaso.dto.ProfessionnelSummaryResponse;
+import com.ngaso.Ngaso.dto.UtilisateurSummaryResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,9 +17,11 @@ import java.util.stream.Collectors;
 public class AdminService {
 
     private final ProfessionnelRepository professionnelRepository;
+    private final UtilisateurRepository utilisateurRepository;
 
-    public AdminService(ProfessionnelRepository professionnelRepository) {
+    public AdminService(ProfessionnelRepository professionnelRepository, UtilisateurRepository utilisateurRepository) {
         this.professionnelRepository = professionnelRepository;
+        this.utilisateurRepository = utilisateurRepository;
     }
 
     @Transactional(readOnly = true)
@@ -58,6 +63,25 @@ public class AdminService {
                 saved.getDocumentJustificatif(),
                 saved.getSpecialite() != null ? saved.getSpecialite().getId() : null,
                 saved.getSpecialite() != null ? saved.getSpecialite().getLibelle() : null
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public List<UtilisateurSummaryResponse> listAllUsers() {
+        return utilisateurRepository.findAll().stream()
+                .map(this::toUserSummary)
+                .collect(Collectors.toList());
+    }
+
+    private UtilisateurSummaryResponse toUserSummary(Utilisateur u) {
+        return new UtilisateurSummaryResponse(
+                u.getId(),
+                u.getNom(),
+                u.getPrenom(),
+                u.getTelephone(),
+                u.getAdresse(),
+                u.getEmail(),
+                u.getRole()
         );
     }
 }
