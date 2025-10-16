@@ -4,6 +4,7 @@ import com.ngaso.Ngaso.DAO.NoviceRepository;
 import com.ngaso.Ngaso.DAO.ProfessionnelRepository;
 import com.ngaso.Ngaso.DAO.UtilisateurRepository;
 import com.ngaso.Ngaso.DAO.AdministrateurRepository;
+import com.ngaso.Ngaso.DAO.SpecialiteRepository;
 import com.ngaso.Ngaso.Models.entites.Novice;
 import com.ngaso.Ngaso.Models.entites.Professionnel;
 import com.ngaso.Ngaso.Models.entites.Utilisateur;
@@ -19,6 +20,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 @Service
 @Transactional
@@ -27,6 +30,7 @@ public class AuthService {
     private final UtilisateurRepository utilisateurRepository;
     private final NoviceRepository noviceRepository;
     private final ProfessionnelRepository professionnelRepository;
+    private final SpecialiteRepository specialiteRepository;
     private final AdministrateurRepository administrateurRepository;
     private final BCryptPasswordEncoder passwordEncoder;
 
@@ -34,10 +38,13 @@ public class AuthService {
                        NoviceRepository noviceRepository,
                        ProfessionnelRepository professionnelRepository,
                        AdministrateurRepository administrateurRepository) {
+                       ProfessionnelRepository professionnelRepository,
+                       SpecialiteRepository specialiteRepository) {
         this.utilisateurRepository = utilisateurRepository;
         this.noviceRepository = noviceRepository;
         this.professionnelRepository = professionnelRepository;
         this.administrateurRepository = administrateurRepository;
+        this.specialiteRepository = specialiteRepository;
         this.passwordEncoder = new BCryptPasswordEncoder();
     }
 
@@ -63,6 +70,9 @@ public class AuthService {
         }
         Professionnel p = new Professionnel();
         p.setNom(request.getNom());
+        p.setPrenom(request.getPrenom());
+        p.setTelephone(request.getTelephone());
+        p.setAdresse(request.getAdresse());
         p.setEmail(request.getEmail());
         p.setPassword(passwordEncoder.encode(request.getPassword()));
         p.setRole(Role.Professionnel);
@@ -71,35 +81,27 @@ public class AuthService {
         p.setEstValider(false);
         p.setDateCréation(new Date());
         p.setDocumentJustificatif(request.getDocument_justificatif());
+        if (request.getSpecialiteIds() != null && !request.getSpecialiteIds().isEmpty()) {
+            Set<com.ngaso.Ngaso.Models.entites.Specialite> specs = new HashSet<>(
+                    specialiteRepository.findAllById(request.getSpecialiteIds())
+            );
+            p.setSpecialites(specs);
+        }
         Professionnel saved = professionnelRepository.save(p);
         return new AuthLoginResponse(saved.getId(), saved.getRole(), "Inscription réussie");
     }
 
     @Transactional(readOnly = true)
     public AuthLoginResponse login(AuthLoginRequest request) {
-        // Admin: login via email + password
-        if (request.getEmail() != null && !request.getEmail().isBlank()) {
-            Administrateur admin = administrateurRepository.findByEmail(request.getEmail())
-                    .orElseThrow(() -> new IllegalArgumentException("Identifiants invalides"));
-            if (!passwordEncoder.matches(request.getPassword(), admin.getPassword())) {
-                throw new IllegalArgumentException("Identifiants invalides");
-            }
-            return new AuthLoginResponse(admin.getId(), Role.Admin, "Connexion réussie");
+        Utilisateur user = utilisateurRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("Identifiants invalides"));
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("Identifiants invalides");
         }
-
-        // Utilisateurs (Novice/Professionnel): login via telephone + password
-        if (request.getTelephone() != null && !request.getTelephone().isBlank()) {
-            Utilisateur user = utilisateurRepository.findByTelephone(request.getTelephone())
-                    .orElseThrow(() -> new IllegalArgumentException("Identifiants invalides"));
-            if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-                throw new IllegalArgumentException("Identifiants invalides");
-            }
-            if (user instanceof Professionnel p && Boolean.FALSE.equals(p.getEstValider())) {
-                throw new AccessDeniedException("Compte professionnel non validé");
-            }
-            return new AuthLoginResponse(user.getId(), user.getRole(), "Connexion réussie");
+        if (user instanceof Professionnel p && Boolean.FALSE.equals(p.getEstValider())) {
+            throw new AccessDeniedException("Compte professionnel non validé");
         }
-
-        throw new IllegalArgumentException("Fournissez vos identifiants pour vous connecter");
+        return new AuthLoginResponse(user.getId(), user.getRole(), "Connexion réussie");
     }
 }
+
