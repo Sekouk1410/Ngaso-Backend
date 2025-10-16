@@ -118,6 +118,12 @@ public class ProjetService {
     }
 
     @Transactional(readOnly = true)
+    public List<ProjetResponse> listEnCours() {
+        return projetRepo.findByEtat(EtatProjet.En_Cours)
+                .stream().map(this::map).collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public ProjetResponse getProjet(Integer id) {
         Optional<ProjetConstruction> opt = projetRepo.findById(id);
         ProjetConstruction p = opt.orElseThrow(() -> new IllegalArgumentException("Projet introuvable: " + id));

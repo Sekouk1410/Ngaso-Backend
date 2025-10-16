@@ -33,6 +33,11 @@ public class ProjetController {
         return ResponseEntity.ok(projetService.listByNovice(noviceId));
     }
 
+    @GetMapping("/en-cours")
+    public ResponseEntity<List<ProjetResponse>> listEnCours() {
+        return ResponseEntity.ok(projetService.listEnCours());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ProjetResponse> get(@PathVariable Integer id) {
         return ResponseEntity.ok(projetService.getProjet(id));
