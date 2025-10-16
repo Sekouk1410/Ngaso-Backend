@@ -20,13 +20,17 @@ public abstract class Utilisateur {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
-
+    @Column(nullable = false)
     private String nom;
-    private String prénom;
-    private String téléphone;
+    @Column(nullable = false)
+    private String prenom;
+    @Column(nullable = false, unique = true)
+    private String telephone;
+    @Column(nullable = false)
     private String adresse;
     @Column(unique = true)
     private String email;
+    @Column(nullable = false)
     private String password;
 
     @Enumerated(EnumType.STRING)
