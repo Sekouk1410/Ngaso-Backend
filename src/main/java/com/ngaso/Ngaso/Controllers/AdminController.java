@@ -29,7 +29,7 @@ public class AdminController {
     }
 
     @PostMapping("/professionnels/{id}/validate")
-    public ResponseEntity<Professionnel> validate(@PathVariable Integer id) {
+    public ResponseEntity<ProfessionnelSummaryResponse> validate(@PathVariable Integer id) {
         return ResponseEntity.ok(adminService.validateProfessionnel(id));
     }
 

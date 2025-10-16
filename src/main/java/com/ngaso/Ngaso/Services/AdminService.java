@@ -40,10 +40,24 @@ public class AdminService {
                 .collect(Collectors.toList());
     }
 
-    public Professionnel validateProfessionnel(Integer id) {
+    public ProfessionnelSummaryResponse validateProfessionnel(Integer id) {
         Professionnel p = professionnelRepository.findById(id)
              .orElseThrow(() -> new IllegalArgumentException("Professionnel introuvable: " + id));
         p.setEstValider(true);
-        return professionnelRepository.save(p); 
+        Professionnel saved = professionnelRepository.save(p);
+        return new ProfessionnelSummaryResponse(
+                saved.getId(),
+                saved.getNom(),
+                saved.getPrenom(),
+                saved.getTelephone(),
+                saved.getAdresse(),
+                saved.getEmail(),
+                saved.getEntreprise(),
+                saved.getDescription(),
+                saved.getEstValider(),
+                saved.getDocumentJustificatif(),
+                saved.getSpecialite() != null ? saved.getSpecialite().getId() : null,
+                saved.getSpecialite() != null ? saved.getSpecialite().getLibelle() : null
+        );
     }
 }
