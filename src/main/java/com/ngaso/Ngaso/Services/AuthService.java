@@ -3,6 +3,7 @@ package com.ngaso.Ngaso.Services;
 import com.ngaso.Ngaso.DAO.NoviceRepository;
 import com.ngaso.Ngaso.DAO.ProfessionnelRepository;
 import com.ngaso.Ngaso.DAO.UtilisateurRepository;
+import com.ngaso.Ngaso.DAO.SpecialiteRepository;
 import com.ngaso.Ngaso.Models.entites.Novice;
 import com.ngaso.Ngaso.Models.entites.Professionnel;
 import com.ngaso.Ngaso.Models.entites.Utilisateur;
@@ -17,6 +18,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 @Service
 @Transactional
@@ -25,14 +28,17 @@ public class AuthService {
     private final UtilisateurRepository utilisateurRepository;
     private final NoviceRepository noviceRepository;
     private final ProfessionnelRepository professionnelRepository;
+    private final SpecialiteRepository specialiteRepository;
     private final BCryptPasswordEncoder passwordEncoder;
 
     public AuthService(UtilisateurRepository utilisateurRepository,
                        NoviceRepository noviceRepository,
-                       ProfessionnelRepository professionnelRepository) {
+                       ProfessionnelRepository professionnelRepository,
+                       SpecialiteRepository specialiteRepository) {
         this.utilisateurRepository = utilisateurRepository;
         this.noviceRepository = noviceRepository;
         this.professionnelRepository = professionnelRepository;
+        this.specialiteRepository = specialiteRepository;
         this.passwordEncoder = new BCryptPasswordEncoder();
     }
 
@@ -58,6 +64,9 @@ public class AuthService {
         }
         Professionnel p = new Professionnel();
         p.setNom(request.getNom());
+        p.setPrenom(request.getPrenom());
+        p.setTelephone(request.getTelephone());
+        p.setAdresse(request.getAdresse());
         p.setEmail(request.getEmail());
         p.setPassword(passwordEncoder.encode(request.getPassword()));
         p.setRole(Role.Professionnel);
@@ -66,6 +75,12 @@ public class AuthService {
         p.setEstValider(false);
         p.setDateCréation(new Date());
         p.setDocumentJustificatif(request.getDocument_justificatif());
+        if (request.getSpecialiteIds() != null && !request.getSpecialiteIds().isEmpty()) {
+            Set<com.ngaso.Ngaso.Models.entites.Specialite> specs = new HashSet<>(
+                    specialiteRepository.findAllById(request.getSpecialiteIds())
+            );
+            p.setSpecialites(specs);
+        }
         Professionnel saved = professionnelRepository.save(p);
         return new AuthLoginResponse(saved.getId(), saved.getRole(), "Inscription réussie");
     }
