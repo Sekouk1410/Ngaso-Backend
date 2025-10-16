@@ -5,6 +5,7 @@ import com.ngaso.Ngaso.Services.AdminService;
 import com.ngaso.Ngaso.DAO.SpecialiteRepository;
 import com.ngaso.Ngaso.Models.entites.Specialite;
 import com.ngaso.Ngaso.dto.SpecialiteCreateRequest;
+import com.ngaso.Ngaso.dto.UtilisateurSummaryResponse;
 import com.ngaso.Ngaso.dto.ProfessionnelSummaryResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -43,5 +44,10 @@ public class AdminController {
     @GetMapping("/specialites")
     public ResponseEntity<List<Specialite>> listSpecialites() {
         return ResponseEntity.ok(specialiteRepository.findAll());
+    }
+
+    @GetMapping("/utilisateurs")
+    public ResponseEntity<List<UtilisateurSummaryResponse>> listUtilisateurs() {
+        return ResponseEntity.ok(adminService.listAllUsers());
     }
 }

@@ -10,9 +10,12 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class AuthLoginResponse {
-    private Integer userId;
+public class UtilisateurSummaryResponse {
+    private Integer id;
+    private String nom;
+    private String prenom;
+    private String telephone;
+    private String adresse;
+    private String email;
     private Role role;
-    private String message;
-    private String token;
 }
