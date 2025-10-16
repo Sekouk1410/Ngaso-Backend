@@ -6,6 +6,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class AuthLoginRequest {
-    private String email;
+    private String email;     // utilisé pour admin
+    private String telephone; // utilisé pour novice/professionnel
     private String password;
 }
