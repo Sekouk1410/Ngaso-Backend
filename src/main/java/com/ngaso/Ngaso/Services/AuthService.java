@@ -63,7 +63,7 @@ public class AuthService {
         return new AuthLoginResponse(saved.getId(), saved.getRole(), "Inscription réussie");
     }
 
-    public AuthLoginResponse registerProfessionnel(ProfessionnelSignupRequest request) {
+    public AuthLoginResponse registerProfessionnel(ProfessionnelSignupRequest request, org.springframework.web.multipart.MultipartFile document) {
         if (utilisateurRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Email déjà utilisé");
         }
@@ -79,13 +79,34 @@ public class AuthService {
         p.setDescription(request.getDescription());
         p.setEstValider(false);
         p.setDateCréation(new Date());
-        p.setDocumentJustificatif(request.getDocument_justificatif());
-        if (request.getSpecialiteIds() != null && !request.getSpecialiteIds().isEmpty()) {
-            Set<com.ngaso.Ngaso.Models.entites.Specialite> specs = new HashSet<>(
-                    specialiteRepository.findAllById(request.getSpecialiteIds())
-            );
-            p.setSpecialites(specs);
+        // Handle justificatif upload
+        if (document != null && !document.isEmpty()) {
+            try {
+                String base = System.getProperty("user.dir");
+                java.nio.file.Path baseDir = java.nio.file.Paths.get(base, "uploads", "justificatifs");
+                java.nio.file.Files.createDirectories(baseDir);
+                String original = document.getOriginalFilename() == null ? "file" : document.getOriginalFilename();
+                String onlyName = java.nio.file.Paths.get(original).getFileName().toString();
+                String safeName = java.util.UUID.randomUUID() + "-" + onlyName;
+                java.nio.file.Path target = baseDir.resolve(safeName);
+                try (java.io.InputStream in = document.getInputStream()) {
+                    java.nio.file.Files.copy(in, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                }
+                p.setDocumentJustificatif(target.toString().replace('\\', '/'));
+            } catch (java.lang.IllegalStateException | java.io.IOException ex) {
+                throw new IllegalArgumentException("Echec d'enregistrement du document justificatif");
+            }
+        } else {
+            throw new IllegalArgumentException("Document justificatif manquant");
         }
+
+        // Single specialite by id
+        if (request.getSpecialiteId() == null) {
+            throw new IllegalArgumentException("specialiteId est requis");
+        }
+        com.ngaso.Ngaso.Models.entites.Specialite spec = specialiteRepository.findById(request.getSpecialiteId())
+                .orElseThrow(() -> new IllegalArgumentException("Spécialité introuvable"));
+        p.setSpecialite(spec);
         Professionnel saved = professionnelRepository.save(p);
         return new AuthLoginResponse(saved.getId(), saved.getRole(), "Inscription réussie");
     }
