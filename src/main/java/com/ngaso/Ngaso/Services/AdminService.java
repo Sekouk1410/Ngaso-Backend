@@ -2,15 +2,28 @@ package com.ngaso.Ngaso.Services;
 
 import com.ngaso.Ngaso.DAO.ProfessionnelRepository;
 import com.ngaso.Ngaso.DAO.UtilisateurRepository;
+import com.ngaso.Ngaso.DAO.ModeleEtapeRepository;
+import com.ngaso.Ngaso.DAO.IllustrationRepository;
+import com.ngaso.Ngaso.DAO.SpecialiteRepository;
 import com.ngaso.Ngaso.Models.entites.Professionnel;
 import com.ngaso.Ngaso.Models.entites.Utilisateur;
+import com.ngaso.Ngaso.Models.entites.ModeleEtape;
+import com.ngaso.Ngaso.Models.entites.Illustration;
+import com.ngaso.Ngaso.Models.entites.Specialite;
 import com.ngaso.Ngaso.dto.ProfessionnelSummaryResponse;
 import com.ngaso.Ngaso.dto.UtilisateurSummaryResponse;
+import com.ngaso.Ngaso.dto.ModeleEtapeCreateRequest;
+import com.ngaso.Ngaso.dto.ModeleEtapeResponse;
+import com.ngaso.Ngaso.dto.IllustrationCreateRequest;
+import com.ngaso.Ngaso.dto.IllustrationResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.nio.file.Path;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 
 @Service
 @Transactional
@@ -18,10 +31,20 @@ public class AdminService {
 
     private final ProfessionnelRepository professionnelRepository;
     private final UtilisateurRepository utilisateurRepository;
+    private final ModeleEtapeRepository modeleEtapeRepository;
+    private final IllustrationRepository illustrationRepository;
+    private final SpecialiteRepository specialiteRepository;
 
-    public AdminService(ProfessionnelRepository professionnelRepository, UtilisateurRepository utilisateurRepository) {
+    public AdminService(ProfessionnelRepository professionnelRepository,
+                        UtilisateurRepository utilisateurRepository,
+                        ModeleEtapeRepository modeleEtapeRepository,
+                        IllustrationRepository illustrationRepository,
+                        SpecialiteRepository specialiteRepository) {
         this.professionnelRepository = professionnelRepository;
         this.utilisateurRepository = utilisateurRepository;
+        this.modeleEtapeRepository = modeleEtapeRepository;
+        this.illustrationRepository = illustrationRepository;
+        this.specialiteRepository = specialiteRepository;
     }
 
     @Transactional(readOnly = true)
@@ -100,5 +123,51 @@ public class AdminService {
         u.setActif(true);
         Utilisateur saved = utilisateurRepository.save(u);
         return toUserSummary(saved);
+    }
+
+    // ====== Modele Etape ======
+    public ModeleEtapeResponse createModeleEtape(ModeleEtapeCreateRequest req) {
+        if (req.getNom() == null || req.getNom().isBlank()) {
+            throw new IllegalArgumentException("Le nom du modèle est requis");
+        }
+        Specialite spec = specialiteRepository.findById(req.getSpecialiteId())
+                .orElseThrow(() -> new IllegalArgumentException("Spécialité introuvable"));
+        ModeleEtape m = new ModeleEtape();
+        m.setNom(req.getNom());
+        m.setDescription(req.getDescription());
+        m.setOrdre(req.getOrdre());
+        m.setSpecialite(spec);
+        ModeleEtape saved = modeleEtapeRepository.save(m);
+        return new ModeleEtapeResponse(saved.getId(), saved.getNom(), saved.getDescription(), saved.getOrdre(),
+                spec.getId(), spec.getLibelle());
+    }
+
+    public IllustrationResponse addIllustrationToModele(Integer modeleId, IllustrationCreateRequest req, org.springframework.web.multipart.MultipartFile image) {
+        ModeleEtape modele = modeleEtapeRepository.findById(modeleId)
+                .orElseThrow(() -> new IllegalArgumentException("Modèle d'étape introuvable: " + modeleId));
+        if (image == null || image.isEmpty()) {
+            throw new IllegalArgumentException("Image requise");
+        }
+        try {
+            String baseDir = System.getProperty("user.dir");
+            Path uploadDir = Path.of(baseDir, "uploads", "illustrations");
+            Files.createDirectories(uploadDir);
+            String original = image.getOriginalFilename();
+            String filename = java.util.UUID.randomUUID() + (original != null ? ("_" + original.replaceAll("[^a-zA-Z0-9._-]", "_")) : "");
+            Path target = uploadDir.resolve(filename);
+            try (java.io.InputStream in = image.getInputStream()) {
+                Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
+            }
+
+            Illustration ill = new Illustration();
+            ill.setTitre(req.getTitre());
+            ill.setDescription(req.getDescription());
+            ill.setUrlImage(target.toString().replace('\\', '/'));
+            ill.setModele(modele);
+            Illustration saved = illustrationRepository.save(ill);
+            return new IllustrationResponse(saved.getId(), saved.getTitre(), saved.getDescription(), saved.getUrlImage(), modele.getId());
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("Echec d'enregistrement de l'image: " + ex.getMessage());
+        }
     }
 }
