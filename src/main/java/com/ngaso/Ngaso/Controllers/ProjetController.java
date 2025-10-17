@@ -29,6 +29,11 @@ public class ProjetController {
         return ResponseEntity.ok(projetService.createProjetForNovice(noviceId, request));
     }
 
+    @GetMapping("/novices/{noviceId}")
+    public ResponseEntity<List<ProjetResponse>> listForNovice(@PathVariable Integer noviceId) {
+        return ResponseEntity.ok(projetService.listByNovice(noviceId));
+    }
+
     @GetMapping
     public ResponseEntity<List<ProjetResponse>> listByNovice(@RequestParam Integer noviceId) {
         return ResponseEntity.ok(projetService.listByNovice(noviceId));
