@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import com.ngaso.Ngaso.Services.ProjetService;
 import com.ngaso.Ngaso.dto.ProjetCreateRequest;
 import com.ngaso.Ngaso.dto.ProjetResponse;
+import com.ngaso.Ngaso.dto.EtapeWithIllustrationsResponse;
 
 import java.util.List;
 
@@ -41,6 +42,11 @@ public class ProjetController {
     @GetMapping("/{id}")
     public ResponseEntity<ProjetResponse> get(@PathVariable Integer id) {
         return ResponseEntity.ok(projetService.getProjet(id));
+    }
+
+    @GetMapping("/{id}/etapes")
+    public ResponseEntity<List<EtapeWithIllustrationsResponse>> listEtapes(@PathVariable Integer id) {
+        return ResponseEntity.ok(projetService.listEtapesWithIllustrations(id));
     }
 }
 

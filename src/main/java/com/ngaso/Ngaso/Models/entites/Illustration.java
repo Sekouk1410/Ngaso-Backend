@@ -13,6 +13,7 @@ public class Illustration {
     private Integer id;
 
     private String titre;
+    @Column(columnDefinition = "TEXT")
     private String description;
     private String urlImage;
 

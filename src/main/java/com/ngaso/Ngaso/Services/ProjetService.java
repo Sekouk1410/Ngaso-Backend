@@ -15,6 +15,8 @@ import com.ngaso.Ngaso.Models.entites.EtapeConstruction;
 import com.ngaso.Ngaso.Models.enums.EtatProjet;
 import com.ngaso.Ngaso.dto.ProjetCreateRequest;
 import com.ngaso.Ngaso.dto.ProjetResponse;
+import com.ngaso.Ngaso.dto.EtapeWithIllustrationsResponse;
+import com.ngaso.Ngaso.dto.IllustrationResponse;
 
 import java.util.Date;
 import java.util.List;
@@ -57,21 +59,16 @@ public class ProjetService {
 
         ProjetConstruction saved = projetRepo.save(p);
 
-        // Initialiser les étapes à partir des modèles
-        List<ModeleEtape> modeles = modeleEtapeRepo.findAll();
-        // Optionnel: trier par ordre si non garanti par la base
-        modeles.sort((a, b) -> Integer.compare(
-                a.getOrdre() == null ? Integer.MAX_VALUE : a.getOrdre(),
-                b.getOrdre() == null ? Integer.MAX_VALUE : b.getOrdre()
-        ));
+        // Initialiser les étapes à partir des modèles (ordre croissant)
+        List<ModeleEtape> modeles = modeleEtapeRepo.findAllByOrderByOrdreAsc();
 
         for (ModeleEtape m : modeles) {
             EtapeConstruction etape = new EtapeConstruction();
             etape.setProjet(saved);
             etape.setModele(m);
             etape.setEstValider(false);
-            etapeRepo.save(etape);
-            saved.getEtapes().add(etape);
+            EtapeConstruction etapeSaved = etapeRepo.save(etape);
+            saved.getEtapes().add(etapeSaved);
         }
 
         return map(saved);
@@ -92,12 +89,8 @@ public class ProjetService {
 
         ProjetConstruction saved = projetRepo.save(p);
 
-        // Initialiser les étapes à partir des modèles
-        List<ModeleEtape> modeles = modeleEtapeRepo.findAll();
-        modeles.sort((a, b) -> Integer.compare(
-                a.getOrdre() == null ? Integer.MAX_VALUE : a.getOrdre(),
-                b.getOrdre() == null ? Integer.MAX_VALUE : b.getOrdre()
-        ));
+        // Initialiser les étapes à partir des modèles (ordre croissant)
+        List<ModeleEtape> modeles = modeleEtapeRepo.findAllByOrderByOrdreAsc();
 
         for (ModeleEtape m : modeles) {
             EtapeConstruction etape = new EtapeConstruction();
@@ -128,6 +121,35 @@ public class ProjetService {
         Optional<ProjetConstruction> opt = projetRepo.findById(id);
         ProjetConstruction p = opt.orElseThrow(() -> new IllegalArgumentException("Projet introuvable: " + id));
         return map(p);
+    }
+
+    @Transactional(readOnly = true)
+    public List<EtapeWithIllustrationsResponse> listEtapesWithIllustrations(Integer projetId) {
+        ProjetConstruction p = projetRepo.findById(projetId)
+                .orElseThrow(() -> new IllegalArgumentException("Projet introuvable: " + projetId));
+        return p.getEtapes().stream()
+                .sorted((e1, e2) -> {
+                    Integer o1 = e1.getModele() != null ? e1.getModele().getOrdre() : Integer.MAX_VALUE;
+                    Integer o2 = e2.getModele() != null ? e2.getModele().getOrdre() : Integer.MAX_VALUE;
+                    return Integer.compare(o1 == null ? Integer.MAX_VALUE : o1, o2 == null ? Integer.MAX_VALUE : o2);
+                })
+                .map(e -> {
+                    ModeleEtape m = e.getModele();
+                    List<IllustrationResponse> ill = m != null && m.getIllustrations() != null
+                            ? m.getIllustrations().stream()
+                                .map(i -> new IllustrationResponse(i.getId(), i.getTitre(), i.getDescription(), i.getUrlImage(), m.getId()))
+                                .collect(Collectors.toList())
+                            : java.util.Collections.emptyList();
+                    return new EtapeWithIllustrationsResponse(
+                            e.getIdEtape(),
+                            m != null ? m.getId() : null,
+                            m != null ? m.getNom() : null,
+                            m != null ? m.getDescription() : null,
+                            m != null ? m.getOrdre() : null,
+                            ill
+                    );
+                })
+                .collect(Collectors.toList());
     }
 
     private ProjetResponse map(ProjetConstruction p) {
