@@ -17,6 +17,7 @@ import com.ngaso.Ngaso.dto.ProjetCreateRequest;
 import com.ngaso.Ngaso.dto.ProjetResponse;
 import com.ngaso.Ngaso.dto.EtapeWithIllustrationsResponse;
 import com.ngaso.Ngaso.dto.IllustrationResponse;
+import com.ngaso.Ngaso.dto.ProjetUpdateRequest;
 
 import java.util.Date;
 import java.util.List;
@@ -162,5 +163,29 @@ public class ProjetService {
         r.setEtat(p.getEtat());
         r.setDateCreation(p.getDateCréation());
         return r;
+    }
+
+    // ====== Update/Delete by owner (novice) ======
+    public ProjetResponse updateProjetByOwner(Integer authUserId, Integer projetId, ProjetUpdateRequest req) {
+        ProjetConstruction p = projetRepo.findById(projetId)
+                .orElseThrow(() -> new IllegalArgumentException("Projet introuvable: " + projetId));
+        if (p.getProprietaire() == null || p.getProprietaire().getId() == null || !p.getProprietaire().getId().equals(authUserId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Non autorisé: vous n'êtes pas le propriétaire du projet");
+        }
+        if (req.getTitre() != null) p.setTitre(req.getTitre());
+        if (req.getDimensionsTerrain() != null) p.setDimensionsTerrain(req.getDimensionsTerrain());
+        if (req.getBudget() != null) p.setBudget(req.getBudget());
+        if (req.getLocalisation() != null) p.setLocalisation(req.getLocalisation());
+        ProjetConstruction saved = projetRepo.save(p);
+        return map(saved);
+    }
+
+    public void deleteProjetByOwner(Integer authUserId, Integer projetId) {
+        ProjetConstruction p = projetRepo.findById(projetId)
+                .orElseThrow(() -> new IllegalArgumentException("Projet introuvable: " + projetId));
+        if (p.getProprietaire() == null || p.getProprietaire().getId() == null || !p.getProprietaire().getId().equals(authUserId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Non autorisé: vous n'êtes pas le propriétaire du projet");
+        }
+        projetRepo.delete(p);
     }
 }
