@@ -80,5 +80,12 @@ public class ProjetController {
         projetService.deleteProjetByOwner(authUserId, id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/etapes/{etapeId}/valider")
+    public ResponseEntity<EtapeWithIllustrationsResponse> validerEtape(@PathVariable Integer etapeId) {
+        String principal = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Integer authUserId = Integer.parseInt(principal);
+        return ResponseEntity.ok(projetService.validateEtapeByOwner(authUserId, etapeId));
+    }
 }
 

@@ -41,7 +41,8 @@ public class SecurityConfig {
                     .requestMatchers(
                     "/projets/*/etapes",
                     "/projets/novices/*",
-                    "/projets/*").hasRole("Novice")
+                    "/projets/*",
+                    "/projets/etapes/*/valider").hasRole("Novice")
                 // Others must be authenticated
                 .anyRequest().authenticated()
             )

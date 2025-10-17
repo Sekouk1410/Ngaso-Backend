@@ -147,10 +147,37 @@ public class ProjetService {
                             m != null ? m.getNom() : null,
                             m != null ? m.getDescription() : null,
                             m != null ? m.getOrdre() : null,
+                            e.getEstValider(),
                             ill
                     );
                 })
                 .collect(Collectors.toList());
+    }
+
+    public EtapeWithIllustrationsResponse validateEtapeByOwner(Integer authUserId, Integer etapeId) {
+        EtapeConstruction e = etapeRepo.findById(etapeId)
+                .orElseThrow(() -> new IllegalArgumentException("Étape introuvable: " + etapeId));
+        ProjetConstruction p = e.getProjet();
+        if (p == null || p.getProprietaire() == null || p.getProprietaire().getId() == null || !p.getProprietaire().getId().equals(authUserId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Non autorisé: cette étape n'appartient pas à votre projet");
+        }
+        e.setEstValider(true);
+        EtapeConstruction saved = etapeRepo.save(e);
+        ModeleEtape m = saved.getModele();
+        List<IllustrationResponse> ill = m != null && m.getIllustrations() != null
+                ? m.getIllustrations().stream()
+                    .map(i -> new IllustrationResponse(i.getId(), i.getTitre(), i.getDescription(), i.getUrlImage(), m.getId()))
+                    .collect(Collectors.toList())
+                : java.util.Collections.emptyList();
+        return new EtapeWithIllustrationsResponse(
+                saved.getIdEtape(),
+                m != null ? m.getId() : null,
+                m != null ? m.getNom() : null,
+                m != null ? m.getDescription() : null,
+                m != null ? m.getOrdre() : null,
+                saved.getEstValider(),
+                ill
+        );
     }
 
     private ProjetResponse map(ProjetConstruction p) {
@@ -162,6 +189,15 @@ public class ProjetService {
         r.setDimensionsTerrain(p.getDimensionsTerrain());
         r.setEtat(p.getEtat());
         r.setDateCreation(p.getDateCréation());
+        if (p.getEtapes() != null) {
+            int total = p.getEtapes().size();
+            int valides = (int) p.getEtapes().stream().filter(e -> Boolean.TRUE.equals(e.getEstValider())).count();
+            r.setTotalEtapes(total);
+            r.setEtapesValidees(valides);
+        } else {
+            r.setTotalEtapes(0);
+            r.setEtapesValidees(0);
+        }
         return r;
     }
 

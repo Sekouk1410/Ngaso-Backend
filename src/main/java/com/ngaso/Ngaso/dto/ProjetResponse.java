@@ -11,6 +11,8 @@ public class ProjetResponse {
     private String dimensionsTerrain;
     private EtatProjet etat;
     private Date dateCreation;
+    private Integer totalEtapes;
+    private Integer etapesValidees;
 
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }
@@ -32,4 +34,10 @@ public class ProjetResponse {
 
     public Date getDateCreation() { return dateCreation; }
     public void setDateCreation(Date dateCreation) { this.dateCreation = dateCreation; }
+
+    public Integer getTotalEtapes() { return totalEtapes; }
+    public void setTotalEtapes(Integer totalEtapes) { this.totalEtapes = totalEtapes; }
+
+    public Integer getEtapesValidees() { return etapesValidees; }
+    public void setEtapesValidees(Integer etapesValidees) { this.etapesValidees = etapesValidees; }
 }
