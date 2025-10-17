@@ -38,7 +38,7 @@ public class SecurityConfig {
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/admin/specialites").permitAll()
                 // Admin scope
                 .requestMatchers("/admin/**").hasRole("Admin")
-                    .requestMatchers("/projets/*/etapes").hasRole("Novice")
+                    .requestMatchers("/projets/*/etapes","/projets/novices/*").hasRole("Novice")
                 // Others must be authenticated
                 .anyRequest().authenticated()
             )
