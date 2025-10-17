@@ -3,10 +3,12 @@ package com.ngaso.Ngaso.Controllers;
 import com.ngaso.Ngaso.Services.ProfessionnelDashboardService;
 import com.ngaso.Ngaso.Services.ProfessionnelRealisationService;
 import com.ngaso.Ngaso.Services.ProfessionnelPropositionService;
+import com.ngaso.Ngaso.Services.ProfessionnelDemandeWorkflowService;
 import com.ngaso.Ngaso.dto.ProfessionnelDashboardResponse;
 import com.ngaso.Ngaso.dto.AddRealisationRequest;
 import com.ngaso.Ngaso.dto.CreatePropositionRequest;
 import com.ngaso.Ngaso.dto.PropositionDevisResponse;
+import com.ngaso.Ngaso.dto.DemandeUpdateResponse;
 import com.ngaso.Ngaso.Models.entites.PropositionDevis;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,13 +22,16 @@ public class ProfessionnelController {
     private final ProfessionnelDashboardService dashboardService;
     private final ProfessionnelRealisationService realisationService;
     private final ProfessionnelPropositionService propositionService;
+    private final ProfessionnelDemandeWorkflowService demandeWorkflowService;
 
     public ProfessionnelController(ProfessionnelDashboardService dashboardService,
                                    ProfessionnelRealisationService realisationService,
-                                   ProfessionnelPropositionService propositionService) {
+                                   ProfessionnelPropositionService propositionService,
+                                   ProfessionnelDemandeWorkflowService demandeWorkflowService) {
         this.dashboardService = dashboardService;
         this.realisationService = realisationService;
         this.propositionService = propositionService;
+        this.demandeWorkflowService = demandeWorkflowService;
     }
 
     @GetMapping("/{id}/dashboard")
@@ -66,6 +71,18 @@ public class ProfessionnelController {
                                                           @RequestBody CreatePropositionRequest request) {
         PropositionDevis saved = propositionService.proposerPourProjet(professionnelId, projetId, request, null);
         return ResponseEntity.ok(map(saved));
+    }
+
+    @PostMapping("/{id}/demandes/{demandeId}/validate")
+    public ResponseEntity<DemandeUpdateResponse> validateDemande(@PathVariable("id") Integer professionnelId,
+                                                                 @PathVariable("demandeId") Integer demandeId) {
+        return ResponseEntity.ok(demandeWorkflowService.valider(professionnelId, demandeId));
+    }
+
+    @PostMapping("/{id}/demandes/{demandeId}/refuse")
+    public ResponseEntity<DemandeUpdateResponse> refuseDemande(@PathVariable("id") Integer professionnelId,
+                                                               @PathVariable("demandeId") Integer demandeId) {
+        return ResponseEntity.ok(demandeWorkflowService.refuser(professionnelId, demandeId));
     }
 
     private PropositionDevisResponse map(PropositionDevis d) {
