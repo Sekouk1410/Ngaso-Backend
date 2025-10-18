@@ -161,6 +161,19 @@ public class ProjetService {
         if (p == null || p.getProprietaire() == null || p.getProprietaire().getId() == null || !p.getProprietaire().getId().equals(authUserId)) {
             throw new org.springframework.security.access.AccessDeniedException("Non autorisé: cette étape n'appartient pas à votre projet");
         }
+        // Règle: validation séquentielle selon l'ordre du modèle
+        ModeleEtape currentModel = e.getModele();
+        Integer currentOrder = currentModel != null ? currentModel.getOrdre() : null;
+        if (currentOrder != null && p.getEtapes() != null) {
+            boolean previousAllValidated = p.getEtapes().stream()
+                    .filter(other -> other.getIdEtape() != null && !other.getIdEtape().equals(e.getIdEtape()))
+                    .filter(other -> other.getModele() != null && other.getModele().getOrdre() != null)
+                    .filter(other -> other.getModele().getOrdre() < currentOrder)
+                    .allMatch(other -> Boolean.TRUE.equals(other.getEstValider()));
+            if (!previousAllValidated) {
+                throw new IllegalStateException("Impossible de valider cette étape avant de valider les étapes précédentes");
+            }
+        }
         e.setEstValider(true);
         EtapeConstruction saved = etapeRepo.save(e);
         ModeleEtape m = saved.getModele();
