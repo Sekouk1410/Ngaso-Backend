@@ -125,6 +125,16 @@ public class ProjetService {
     }
 
     @Transactional(readOnly = true)
+    public ProjetResponse getProjetOwned(Integer authUserId, Integer id) {
+        ProjetConstruction p = projetRepo.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Projet introuvable: " + id));
+        if (p.getProprietaire() == null || p.getProprietaire().getId() == null || !p.getProprietaire().getId().equals(authUserId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Non autorisé: accès restreint à vos projets");
+        }
+        return map(p);
+    }
+
+    @Transactional(readOnly = true)
     public List<EtapeWithIllustrationsResponse> listEtapesWithIllustrations(Integer projetId) {
         ProjetConstruction p = projetRepo.findById(projetId)
                 .orElseThrow(() -> new IllegalArgumentException("Projet introuvable: " + projetId));
@@ -152,6 +162,16 @@ public class ProjetService {
                     );
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<EtapeWithIllustrationsResponse> listEtapesWithIllustrationsOwned(Integer authUserId, Integer projetId) {
+        ProjetConstruction p = projetRepo.findById(projetId)
+                .orElseThrow(() -> new IllegalArgumentException("Projet introuvable: " + projetId));
+        if (p.getProprietaire() == null || p.getProprietaire().getId() == null || !p.getProprietaire().getId().equals(authUserId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Non autorisé: accès restreint à vos projets");
+        }
+        return listEtapesWithIllustrations(projetId);
     }
 
     public EtapeWithIllustrationsResponse validateEtapeByOwner(Integer authUserId, Integer etapeId) {
