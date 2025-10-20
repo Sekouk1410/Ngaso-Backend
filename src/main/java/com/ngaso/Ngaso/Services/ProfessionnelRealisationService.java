@@ -5,16 +5,23 @@ import com.ngaso.Ngaso.Models.entites.Professionnel;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.io.IOException;
+import java.util.stream.Collectors;
+
+import com.ngaso.Ngaso.dto.RealisationItemResponse;
 
 @Service
 public class ProfessionnelRealisationService {
 
     private final ProfessionnelRepository professionnelRepository;
+    private final FileStorageService storageService;
 
-    public ProfessionnelRealisationService(ProfessionnelRepository professionnelRepository) {
+    public ProfessionnelRealisationService(ProfessionnelRepository professionnelRepository, FileStorageService storageService) {
         this.professionnelRepository = professionnelRepository;
+        this.storageService = storageService;
     }
 
     @Transactional(readOnly = true)
@@ -25,6 +32,18 @@ public class ProfessionnelRealisationService {
             throw new AccessDeniedException("Compte professionnel non validé");
         }
         return p.getRealisations();
+    }
+
+    @Transactional(readOnly = true)
+    public List<RealisationItemResponse> listItems(Integer professionnelId) {
+        Professionnel p = professionnelRepository.findById(professionnelId)
+                .orElseThrow(() -> new IllegalArgumentException("Professionnel introuvable"));
+        if (Boolean.FALSE.equals(p.getEstValider())) {
+            throw new AccessDeniedException("Compte professionnel non validé");
+        }
+        return p.getRealisations().stream()
+                .map(url -> new RealisationItemResponse(extractIdFromUrl(url), url))
+                .collect(Collectors.toList());
     }
 
     @Transactional
@@ -46,6 +65,26 @@ public class ProfessionnelRealisationService {
     }
 
     @Transactional
+    public List<String> addUpload(Integer professionnelId, MultipartFile image) {
+        try {
+            Professionnel p = professionnelRepository.findById(professionnelId)
+                    .orElseThrow(() -> new IllegalArgumentException("Professionnel introuvable"));
+            if (Boolean.FALSE.equals(p.getEstValider())) {
+                throw new AccessDeniedException("Compte professionnel non validé");
+            }
+            String storedPath = storageService.storeRealisation(professionnelId, image);
+            List<String> list = p.getRealisations();
+            if (!list.contains(storedPath)) {
+                list.add(storedPath);
+            }
+            professionnelRepository.save(p);
+            return list;
+        } catch (IOException ex) {
+            throw new RuntimeException("Échec de l'upload de l'image de réalisation", ex);
+        }
+    }
+
+    @Transactional
     public List<String> remove(Integer professionnelId, String url) {
         if (url == null || url.isBlank()) {
             throw new IllegalArgumentException("URL de la réalisation manquante");
@@ -58,5 +97,31 @@ public class ProfessionnelRealisationService {
         p.getRealisations().remove(url);
         professionnelRepository.save(p);
         return p.getRealisations();
+    }
+
+    @Transactional
+    public List<RealisationItemResponse> removeById(Integer professionnelId, String realisationId) {
+        if (realisationId == null || realisationId.isBlank()) {
+            throw new IllegalArgumentException("Identifiant de la réalisation manquant");
+        }
+        Professionnel p = professionnelRepository.findById(professionnelId)
+                .orElseThrow(() -> new IllegalArgumentException("Professionnel introuvable"));
+        if (Boolean.FALSE.equals(p.getEstValider())) {
+            throw new AccessDeniedException("Compte professionnel non validé");
+        }
+        List<String> list = p.getRealisations();
+        String toRemove = list.stream()
+                .filter(url -> realisationId.equals(extractIdFromUrl(url)))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Réalisation introuvable: " + realisationId));
+        list.remove(toRemove);
+        professionnelRepository.save(p);
+        return list.stream().map(url -> new RealisationItemResponse(extractIdFromUrl(url), url)).collect(Collectors.toList());
+    }
+
+    private String extractIdFromUrl(String url) {
+        if (url == null || url.isBlank()) return url;
+        int idx = Math.max(url.lastIndexOf('/'), url.lastIndexOf('\\'));
+        return idx >= 0 && idx < url.length() - 1 ? url.substring(idx + 1) : url;
     }
 }

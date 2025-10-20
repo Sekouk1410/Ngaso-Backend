@@ -7,17 +7,26 @@ import com.ngaso.Ngaso.DAO.EtapeConstructionRepository;
 import com.ngaso.Ngaso.DAO.ModeleEtapeRepository;
 import com.ngaso.Ngaso.DAO.NoviceRepository;
 import com.ngaso.Ngaso.DAO.ProjetConstructionRepository;
+import com.ngaso.Ngaso.DAO.ProfessionnelRepository;
+import com.ngaso.Ngaso.DAO.DemandeServiceRepository;
 import com.ngaso.Ngaso.Models.entites.Novice;
 import com.ngaso.Ngaso.Models.entites.ProjetConstruction;
 import com.ngaso.Ngaso.Models.entites.ModeleEtape;
 import com.ngaso.Ngaso.Models.entites.EtapeConstruction;
+import com.ngaso.Ngaso.Models.entites.Professionnel;
+import com.ngaso.Ngaso.Models.entites.DemandeService;
 
 import com.ngaso.Ngaso.Models.enums.EtatProjet;
+import com.ngaso.Ngaso.Models.enums.StatutDemande;
 import com.ngaso.Ngaso.dto.ProjetCreateRequest;
 import com.ngaso.Ngaso.dto.ProjetResponse;
 import com.ngaso.Ngaso.dto.EtapeWithIllustrationsResponse;
 import com.ngaso.Ngaso.dto.IllustrationResponse;
 import com.ngaso.Ngaso.dto.ProjetUpdateRequest;
+import com.ngaso.Ngaso.dto.ProfessionnelBriefResponse;
+import com.ngaso.Ngaso.dto.DemandeCreateRequest;
+import com.ngaso.Ngaso.dto.DemandeBriefResponse;
+import com.ngaso.Ngaso.dto.DemandeProjectItemResponse;
 
 import java.util.Date;
 import java.util.List;
@@ -32,17 +41,23 @@ public class ProjetService {
     private final NoviceRepository noviceRepo;
     private final ModeleEtapeRepository modeleEtapeRepo;
     private final EtapeConstructionRepository etapeRepo;
+    private final ProfessionnelRepository professionnelRepo;
+    private final DemandeServiceRepository demandeRepo;
 
     public ProjetService(
             ProjetConstructionRepository projetRepo,
             NoviceRepository noviceRepo,
             ModeleEtapeRepository modeleEtapeRepo,
-            EtapeConstructionRepository etapeRepo
+            EtapeConstructionRepository etapeRepo,
+            ProfessionnelRepository professionnelRepo,
+            DemandeServiceRepository demandeRepo
     ) {
         this.projetRepo = projetRepo;
         this.noviceRepo = noviceRepo;
         this.modeleEtapeRepo = modeleEtapeRepo;
         this.etapeRepo = etapeRepo;
+        this.professionnelRepo = professionnelRepo;
+        this.demandeRepo = demandeRepo;
     }
 
     public ProjetResponse createProjet(ProjetCreateRequest req) {
@@ -172,6 +187,136 @@ public class ProjetService {
             throw new org.springframework.security.access.AccessDeniedException("Non autorisé: accès restreint à vos projets");
         }
         return listEtapesWithIllustrations(projetId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProfessionnelBriefResponse> listProfessionnelsForEtapeOwned(Integer authUserId, Integer etapeId) {
+        EtapeConstruction e = etapeRepo.findById(etapeId)
+                .orElseThrow(() -> new IllegalArgumentException("Étape introuvable: " + etapeId));
+        ProjetConstruction p = e.getProjet();
+        if (p == null || p.getProprietaire() == null || p.getProprietaire().getId() == null || !p.getProprietaire().getId().equals(authUserId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Non autorisé: cette étape n'appartient pas à votre projet");
+        }
+        ModeleEtape m = e.getModele();
+        if (m == null || m.getSpecialite() == null || m.getSpecialite().getId() == null) {
+            return java.util.Collections.emptyList();
+        }
+        Integer specialiteId = m.getSpecialite().getId();
+        return professionnelRepo.findBySpecialite_IdAndEstValiderTrue(specialiteId)
+                .stream()
+                .map(pro -> new ProfessionnelBriefResponse(
+                        pro.getId(),
+                        pro.getNom(),
+                        pro.getPrenom(),
+                        pro.getTelephone(),
+                        pro.getEmail(),
+                        pro.getEntreprise(),
+                        pro.getSpecialite() != null ? pro.getSpecialite().getId() : null,
+                        pro.getSpecialite() != null ? pro.getSpecialite().getLibelle() : null,
+                        pro.getRealisations()
+                ))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public Integer createDemandeForEtapeOwned(Integer authUserId, Integer etapeId, DemandeCreateRequest req) {
+        EtapeConstruction e = etapeRepo.findById(etapeId)
+                .orElseThrow(() -> new IllegalArgumentException("Étape introuvable: " + etapeId));
+        ProjetConstruction p = e.getProjet();
+        if (p == null || p.getProprietaire() == null || p.getProprietaire().getId() == null || !p.getProprietaire().getId().equals(authUserId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Non autorisé: cette étape n'appartient pas à votre projet");
+        }
+        ModeleEtape m = e.getModele();
+        if (m == null || m.getSpecialite() == null || m.getSpecialite().getId() == null) {
+            throw new IllegalStateException("Cette étape n'a pas de spécialité assignée");
+        }
+        Professionnel pro = professionnelRepo.findById(req.getProfessionnelId())
+                .orElseThrow(() -> new IllegalArgumentException("Professionnel introuvable"));
+        if (Boolean.FALSE.equals(pro.getEstValider())) {
+            throw new org.springframework.security.access.AccessDeniedException("Professionnel non validé");
+        }
+        Integer etapeSpecId = m.getSpecialite().getId();
+        Integer proSpecId = pro.getSpecialite() != null ? pro.getSpecialite().getId() : null;
+        if (proSpecId == null || !proSpecId.equals(etapeSpecId)) {
+            throw new IllegalArgumentException("La spécialité du professionnel ne correspond pas à celle de l'étape");
+        }
+        // Empêcher les doublons EN_ATTENTE pour la même étape, même pro et même novice
+        boolean alreadyPending = demandeRepo.existsByEtape_IdEtapeAndNovice_IdAndProfessionnel_IdAndStatut(
+                etapeId, authUserId, req.getProfessionnelId(), StatutDemande.EN_ATTENTE);
+        if (alreadyPending) {
+            throw new IllegalStateException("Votre demande a déjà été envoyée à ce professionnel pour cette étape. Veuillez attendre sa réponse.");
+        }
+        DemandeService d = new DemandeService();
+        d.setEtape(e);
+        d.setNovice(p.getProprietaire());
+        d.setProfessionnel(pro);
+        d.setMessage(req.getMessage());
+        d.setStatut(StatutDemande.EN_ATTENTE);
+        d.setDateCréation(new Date());
+        DemandeService saved = demandeRepo.save(d);
+        return saved.getId();
+    }
+
+    @Transactional(readOnly = true)
+    public List<DemandeBriefResponse> listDemandesForEtapeOwned(Integer authUserId, Integer etapeId) {
+        EtapeConstruction e = etapeRepo.findById(etapeId)
+                .orElseThrow(() -> new IllegalArgumentException("Étape introuvable: " + etapeId));
+        ProjetConstruction p = e.getProjet();
+        if (p == null || p.getProprietaire() == null || p.getProprietaire().getId() == null || !p.getProprietaire().getId().equals(authUserId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Non autorisé: cette étape n'appartient pas à votre projet");
+        }
+        return demandeRepo.findByEtape_IdEtapeAndNovice_Id(etapeId, authUserId)
+                .stream()
+                .map(d -> new DemandeBriefResponse(
+                        d.getId(),
+                        d.getMessage(),
+                        d.getStatut(),
+                        d.getDateCréation(),
+                        d.getProfessionnel() != null ? d.getProfessionnel().getId() : null,
+                        d.getProfessionnel() != null ? d.getProfessionnel().getNom() : null,
+                        d.getProfessionnel() != null ? d.getProfessionnel().getPrenom() : null,
+                        d.getProfessionnel() != null ? d.getProfessionnel().getEntreprise() : null
+                ))
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<DemandeProjectItemResponse> listDemandesForProjetOwned(Integer authUserId, Integer projetId) {
+        ProjetConstruction p = projetRepo.findById(projetId)
+                .orElseThrow(() -> new IllegalArgumentException("Projet introuvable: " + projetId));
+        if (p.getProprietaire() == null || p.getProprietaire().getId() == null || !p.getProprietaire().getId().equals(authUserId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Non autorisé: accès restreint à vos projets");
+        }
+        return demandeRepo.findByEtape_Projet_IdProjetAndNovice_Id(projetId, authUserId)
+                .stream()
+                .map(d -> new DemandeProjectItemResponse(
+                        d.getId(),
+                        d.getMessage(),
+                        d.getStatut(),
+                        d.getDateCréation(),
+                        d.getProfessionnel() != null ? d.getProfessionnel().getId() : null,
+                        d.getProfessionnel() != null ? d.getProfessionnel().getNom() : null,
+                        d.getProfessionnel() != null ? d.getProfessionnel().getPrenom() : null,
+                        d.getProfessionnel() != null ? d.getProfessionnel().getEntreprise() : null,
+                        d.getEtape() != null ? d.getEtape().getIdEtape() : null,
+                        (d.getEtape() != null && d.getEtape().getModele() != null) ? d.getEtape().getModele().getOrdre() : null,
+                        (d.getEtape() != null && d.getEtape().getModele() != null) ? d.getEtape().getModele().getNom() : null
+                ))
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Transactional
+    public void cancelDemandeOwned(Integer authUserId, Integer demandeId) {
+        DemandeService d = demandeRepo.findById(demandeId)
+                .orElseThrow(() -> new IllegalArgumentException("Demande introuvable: " + demandeId));
+        if (d.getNovice() == null || d.getNovice().getId() == null || !d.getNovice().getId().equals(authUserId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Non autorisé: vous ne pouvez annuler que vos demandes");
+        }
+        if (d.getStatut() != StatutDemande.EN_ATTENTE) {
+            throw new IllegalStateException("Seules les demandes en attente peuvent être annulées");
+        }
+        d.setStatut(StatutDemande.ANNULER);
+        demandeRepo.save(d);
     }
 
     public EtapeWithIllustrationsResponse validateEtapeByOwner(Integer authUserId, Integer etapeId) {
