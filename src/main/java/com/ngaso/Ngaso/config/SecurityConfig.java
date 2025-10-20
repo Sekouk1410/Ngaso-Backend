@@ -41,6 +41,18 @@ public class SecurityConfig {
                 .requestMatchers("/admin/**").hasRole("Admin")
                 // Professionnel scope
                 .requestMatchers("/professionnels/**").hasRole("Professionnel")
+                // Novice scope
+                .requestMatchers(
+                    "/novices/me/propositions",
+                    "/novices/me/propositions/*/accepter",
+                    "/novices/me/propositions/*/refuser"
+                ).hasRole("Novice")
+                // Conversations (Novice & Professionnel)
+                .requestMatchers(
+                    "/conversations/me",
+                    "/conversations/*/messages",
+                    "/conversations/*/messages/upload"
+                ).hasAnyRole("Novice", "Professionnel")
                     .requestMatchers(
                     "/projets/*/etapes",
                     "/projets/novices/*",
@@ -49,10 +61,7 @@ public class SecurityConfig {
                     "/projets/etapes/*/professionnels",
                     "/projets/etapes/*/demandes",
                             "/projets/*/demandes",
-                            "/projets/demandes/*/annuler",
-                            "/projets/propositions",
-    "/projets/propositions/*/accepter",
-    "/projets/propositions/*/refuser").hasRole("Novice")
+                            "/projets/demandes/*/annuler").hasRole("Novice")
                 // Others must be authenticated
                 .anyRequest().authenticated()
             )

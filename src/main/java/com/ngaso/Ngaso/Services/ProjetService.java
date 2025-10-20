@@ -48,6 +48,7 @@ public class ProjetService {
     private final ProfessionnelRepository professionnelRepo;
     private final DemandeServiceRepository demandeRepo;
     private final PropositionDevisRepository propositionRepo;
+    private final ConversationService conversationService;
 
     public ProjetService(
             ProjetConstructionRepository projetRepo,
@@ -56,7 +57,8 @@ public class ProjetService {
             EtapeConstructionRepository etapeRepo,
             ProfessionnelRepository professionnelRepo,
             DemandeServiceRepository demandeRepo,
-            PropositionDevisRepository propositionRepo
+            PropositionDevisRepository propositionRepo,
+            ConversationService conversationService
     ) {
         this.projetRepo = projetRepo;
         this.noviceRepo = noviceRepo;
@@ -65,6 +67,7 @@ public class ProjetService {
         this.professionnelRepo = professionnelRepo;
         this.demandeRepo = demandeRepo;
         this.propositionRepo = propositionRepo;
+        this.conversationService = conversationService;
     }
 
     public ProjetResponse createProjet(ProjetCreateRequest req) {
@@ -350,6 +353,8 @@ public class ProjetService {
         }
         p.setStatut(StatutDevis.ACCEPTER);
         PropositionDevis saved = propositionRepo.save(p);
+        // Ouvrir/Créer la conversation liée à cette proposition acceptée
+        conversationService.openOrCreateForProposition(saved);
         return map(saved);
     }
 

@@ -21,6 +21,8 @@ public class Message {
 
     private Boolean estLu;
 
+    private String attachmentUrl;
+
     @ManyToOne
     @JoinColumn(name = "expediteur_id")
     private Utilisateur expediteur;

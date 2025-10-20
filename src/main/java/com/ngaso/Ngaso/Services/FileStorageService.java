@@ -36,6 +36,24 @@ public class FileStorageService {
         return buildPublicUrl(target);
     }
 
+    public String storeConversationAttachment(Integer conversationId, MultipartFile file) throws IOException {
+        if (conversationId == null) {
+            throw new IllegalArgumentException("Identifiant de conversation manquant");
+        }
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Fichier de message manquant");
+        }
+        Path dir = root.resolve(Paths.get("conversations", String.valueOf(conversationId)));
+        if (!Files.exists(dir)) {
+            Files.createDirectories(dir);
+        }
+        String ext = extractExtension(file.getOriginalFilename());
+        String filename = UUID.randomUUID().toString() + (ext.isBlank() ? "" : ("." + ext));
+        Path target = dir.resolve(filename);
+        Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+        return buildPublicUrl(target);
+    }
+
     public String storeRealisation(Integer professionnelId, MultipartFile file) throws IOException {
         if (professionnelId == null) {
             throw new IllegalArgumentException("Identifiant professionnel manquant");
@@ -65,5 +83,16 @@ public class FileStorageService {
         Path rel = root.relativize(target.toAbsolutePath().normalize());
         String relStr = rel.toString().replace('\\', '/');
         return "/uploads/" + relStr;
+    }
+
+    public void deleteByPublicUrl(String publicUrl) throws IOException {
+        if (publicUrl == null || publicUrl.isBlank()) return;
+        String prefix = "/uploads/";
+        if (!publicUrl.startsWith(prefix)) return;
+        String rel = publicUrl.substring(prefix.length());
+        Path target = root.resolve(rel).normalize();
+        if (target.startsWith(root)) {
+            Files.deleteIfExists(target);
+        }
     }
 }
