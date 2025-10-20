@@ -87,4 +87,36 @@ public class ProfessionnelPropositionService {
         PropositionDevis saved = propositionDevisRepository.save(devis);
         return saved;
     }
+
+    @Transactional
+    public PropositionDevis annuler(Integer professionnelId, Integer propositionId) {
+        Professionnel pro = professionnelRepository.findById(professionnelId)
+                .orElseThrow(() -> new IllegalArgumentException("Professionnel introuvable"));
+        if (Boolean.FALSE.equals(pro.getEstValider())) {
+            throw new AccessDeniedException("Compte professionnel non validé");
+        }
+        PropositionDevis p = propositionDevisRepository.findById(propositionId)
+                .orElseThrow(() -> new IllegalArgumentException("Proposition introuvable"));
+        if (p.getProfessionnel() == null || !p.getProfessionnel().getId().equals(professionnelId)) {
+            throw new AccessDeniedException("Vous ne pouvez annuler que vos propres propositions");
+        }
+        if (p.getStatut() != StatutDevis.EN_ATTENTE) {
+            throw new IllegalStateException("Seules les propositions en attente peuvent être annulées");
+        }
+        p.setStatut(StatutDevis.ANNULER);
+        return propositionDevisRepository.save(p);
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.List<PropositionDevis> listMesPropositions(Integer professionnelId, StatutDevis statut) {
+        Professionnel pro = professionnelRepository.findById(professionnelId)
+                .orElseThrow(() -> new IllegalArgumentException("Professionnel introuvable"));
+        if (Boolean.FALSE.equals(pro.getEstValider())) {
+            throw new AccessDeniedException("Compte professionnel non validé");
+        }
+        if (statut == null) {
+            return propositionDevisRepository.findByProfessionnel_Id(professionnelId);
+        }
+        return propositionDevisRepository.findByProfessionnel_IdAndStatut(professionnelId, statut);
+    }
 }

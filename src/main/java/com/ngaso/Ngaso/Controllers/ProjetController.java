@@ -14,6 +14,8 @@ import com.ngaso.Ngaso.dto.ProfessionnelBriefResponse;
 import com.ngaso.Ngaso.dto.DemandeCreateRequest;
 import com.ngaso.Ngaso.dto.DemandeBriefResponse;
 import com.ngaso.Ngaso.dto.DemandeProjectItemResponse;
+import com.ngaso.Ngaso.dto.PropositionDevisResponse;
+import com.ngaso.Ngaso.Models.enums.StatutDevis;
 
 import java.util.List;
 
@@ -127,6 +129,29 @@ public class ProjetController {
         Integer authUserId = Integer.parseInt(principal);
         projetService.cancelDemandeOwned(authUserId, demandeId);
         return ResponseEntity.noContent().build();
+    }
+
+    // ====== Propositions - côté Novice ======
+    @GetMapping("/propositions")
+    public ResponseEntity<java.util.List<PropositionDevisResponse>> listMyPropositions(
+            @RequestParam(value = "statut", required = false) StatutDevis statut) {
+        String principal = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Integer authUserId = Integer.parseInt(principal);
+        return ResponseEntity.ok(projetService.listPropositionsOwned(authUserId, statut));
+    }
+
+    @PostMapping("/propositions/{propositionId}/accepter")
+    public ResponseEntity<PropositionDevisResponse> accepterProposition(@PathVariable Integer propositionId) {
+        String principal = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Integer authUserId = Integer.parseInt(principal);
+        return ResponseEntity.ok(projetService.accepterPropositionOwned(authUserId, propositionId));
+    }
+
+    @PostMapping("/propositions/{propositionId}/refuser")
+    public ResponseEntity<PropositionDevisResponse> refuserProposition(@PathVariable Integer propositionId) {
+        String principal = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Integer authUserId = Integer.parseInt(principal);
+        return ResponseEntity.ok(projetService.refuserPropositionOwned(authUserId, propositionId));
     }
 }
 

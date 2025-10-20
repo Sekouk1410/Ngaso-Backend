@@ -13,7 +13,7 @@ import java.util.UUID;
 @Service
 public class FileStorageService {
 
-    private final Path root = Paths.get("uploads");
+    private final Path root = Paths.get("uploads").toAbsolutePath().normalize();
 
     public FileStorageService() throws IOException {
         if (!Files.exists(root)) {
@@ -33,8 +33,7 @@ public class FileStorageService {
         String filename = UUID.randomUUID().toString() + (ext.isBlank() ? "" : ("." + ext));
         Path target = dir.resolve(filename);
         Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
-        // Return relative path; if you expose static resources, map 'uploads' folder accordingly.
-        return target.toString().replace('\\', '/');
+        return buildPublicUrl(target);
     }
 
     public String storeRealisation(Integer professionnelId, MultipartFile file) throws IOException {
@@ -52,12 +51,19 @@ public class FileStorageService {
         String filename = UUID.randomUUID().toString() + (ext.isBlank() ? "" : ("." + ext));
         Path target = dir.resolve(filename);
         Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
-        return target.toString().replace('\\', '/');
+        return buildPublicUrl(target);
     }
 
     private String extractExtension(String name) {
         if (name == null) return "";
         int i = name.lastIndexOf('.');
         return (i >= 0 && i < name.length() - 1) ? name.substring(i + 1) : "";
+    }
+
+    private String buildPublicUrl(Path target) {
+        // Build a URL path relative to '/uploads/**' mapping
+        Path rel = root.relativize(target.toAbsolutePath().normalize());
+        String relStr = rel.toString().replace('\\', '/');
+        return "/uploads/" + relStr;
     }
 }
