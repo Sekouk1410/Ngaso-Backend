@@ -31,7 +31,9 @@ public class ProfessionnelRealisationService {
         if (Boolean.FALSE.equals(p.getEstValider())) {
             throw new AccessDeniedException("Compte professionnel non validé");
         }
-        return p.getRealisations();
+        return p.getRealisations().stream()
+                .map(this::normalizePublicUrl)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
@@ -42,7 +44,7 @@ public class ProfessionnelRealisationService {
             throw new AccessDeniedException("Compte professionnel non validé");
         }
         return p.getRealisations().stream()
-                .map(url -> new RealisationItemResponse(extractIdFromUrl(url), url))
+                .map(url -> new RealisationItemResponse(extractIdFromUrl(url), normalizePublicUrl(url)))
                 .collect(Collectors.toList());
     }
 
@@ -123,5 +125,15 @@ public class ProfessionnelRealisationService {
         if (url == null || url.isBlank()) return url;
         int idx = Math.max(url.lastIndexOf('/'), url.lastIndexOf('\\'));
         return idx >= 0 && idx < url.length() - 1 ? url.substring(idx + 1) : url;
+    }
+
+    private String normalizePublicUrl(String url) {
+        if (url == null || url.isBlank()) return url;
+        String u = url.replace('\\', '/');
+        if (u.startsWith("/uploads/")) return u;
+        if (u.startsWith("uploads/")) return "/" + u;
+        if (u.startsWith("/realisations/")) return "/uploads" + u;
+        if (u.startsWith("realisations/")) return "/uploads/" + u;
+        return u;
     }
 }

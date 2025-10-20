@@ -36,8 +36,11 @@ public class SecurityConfig {
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 // Public listing of specialites (front needs it without auth)
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/admin/specialites").permitAll()
+                .requestMatchers("/uploads/**").permitAll()
                 // Admin scope
                 .requestMatchers("/admin/**").hasRole("Admin")
+                // Professionnel scope
+                .requestMatchers("/professionnels/**").hasRole("Professionnel")
                     .requestMatchers(
                     "/projets/*/etapes",
                     "/projets/novices/*",
@@ -46,7 +49,10 @@ public class SecurityConfig {
                     "/projets/etapes/*/professionnels",
                     "/projets/etapes/*/demandes",
                             "/projets/*/demandes",
-                            "projets/demandes/*/annuler").hasRole("Novice")
+                            "/projets/demandes/*/annuler",
+                            "/projets/propositions",
+    "/projets/propositions/*/accepter",
+    "/projets/propositions/*/refuser").hasRole("Novice")
                 // Others must be authenticated
                 .anyRequest().authenticated()
             )

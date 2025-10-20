@@ -9,15 +9,18 @@ import com.ngaso.Ngaso.DAO.NoviceRepository;
 import com.ngaso.Ngaso.DAO.ProjetConstructionRepository;
 import com.ngaso.Ngaso.DAO.ProfessionnelRepository;
 import com.ngaso.Ngaso.DAO.DemandeServiceRepository;
+import com.ngaso.Ngaso.DAO.PropositionDevisRepository;
 import com.ngaso.Ngaso.Models.entites.Novice;
 import com.ngaso.Ngaso.Models.entites.ProjetConstruction;
 import com.ngaso.Ngaso.Models.entites.ModeleEtape;
 import com.ngaso.Ngaso.Models.entites.EtapeConstruction;
 import com.ngaso.Ngaso.Models.entites.Professionnel;
 import com.ngaso.Ngaso.Models.entites.DemandeService;
+import com.ngaso.Ngaso.Models.entites.PropositionDevis;
 
 import com.ngaso.Ngaso.Models.enums.EtatProjet;
 import com.ngaso.Ngaso.Models.enums.StatutDemande;
+import com.ngaso.Ngaso.Models.enums.StatutDevis;
 import com.ngaso.Ngaso.dto.ProjetCreateRequest;
 import com.ngaso.Ngaso.dto.ProjetResponse;
 import com.ngaso.Ngaso.dto.EtapeWithIllustrationsResponse;
@@ -27,6 +30,7 @@ import com.ngaso.Ngaso.dto.ProfessionnelBriefResponse;
 import com.ngaso.Ngaso.dto.DemandeCreateRequest;
 import com.ngaso.Ngaso.dto.DemandeBriefResponse;
 import com.ngaso.Ngaso.dto.DemandeProjectItemResponse;
+import com.ngaso.Ngaso.dto.PropositionDevisResponse;
 
 import java.util.Date;
 import java.util.List;
@@ -43,6 +47,7 @@ public class ProjetService {
     private final EtapeConstructionRepository etapeRepo;
     private final ProfessionnelRepository professionnelRepo;
     private final DemandeServiceRepository demandeRepo;
+    private final PropositionDevisRepository propositionRepo;
 
     public ProjetService(
             ProjetConstructionRepository projetRepo,
@@ -50,7 +55,8 @@ public class ProjetService {
             ModeleEtapeRepository modeleEtapeRepo,
             EtapeConstructionRepository etapeRepo,
             ProfessionnelRepository professionnelRepo,
-            DemandeServiceRepository demandeRepo
+            DemandeServiceRepository demandeRepo,
+            PropositionDevisRepository propositionRepo
     ) {
         this.projetRepo = projetRepo;
         this.noviceRepo = noviceRepo;
@@ -58,6 +64,7 @@ public class ProjetService {
         this.etapeRepo = etapeRepo;
         this.professionnelRepo = professionnelRepo;
         this.demandeRepo = demandeRepo;
+        this.propositionRepo = propositionRepo;
     }
 
     public ProjetResponse createProjet(ProjetCreateRequest req) {
@@ -319,6 +326,48 @@ public class ProjetService {
         demandeRepo.save(d);
     }
 
+    // ====== Propositions - côté Novice ======
+    @Transactional(readOnly = true)
+    public java.util.List<com.ngaso.Ngaso.dto.PropositionDevisResponse> listPropositionsOwned(Integer authUserId, StatutDevis statut) {
+        java.util.List<PropositionDevis> list;
+        if (statut == null) {
+            list = propositionRepo.findByNovice_Id(authUserId);
+        } else {
+            list = propositionRepo.findByNovice_IdAndStatut(authUserId, statut);
+        }
+        return list.stream().map(this::map).collect(java.util.stream.Collectors.toList());
+    }
+
+    @Transactional
+    public PropositionDevisResponse accepterPropositionOwned(Integer authUserId, Integer propositionId) {
+        PropositionDevis p = propositionRepo.findById(propositionId)
+                .orElseThrow(() -> new IllegalArgumentException("Proposition introuvable: " + propositionId));
+        if (p.getNovice() == null || p.getNovice().getId() == null || !p.getNovice().getId().equals(authUserId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Non autorisé: vous ne pouvez agir que sur vos propositions");
+        }
+        if (p.getStatut() != StatutDevis.EN_ATTENTE) {
+            throw new IllegalStateException("Seules les propositions en attente peuvent être acceptées");
+        }
+        p.setStatut(StatutDevis.ACCEPTER);
+        PropositionDevis saved = propositionRepo.save(p);
+        return map(saved);
+    }
+
+    @Transactional
+    public PropositionDevisResponse refuserPropositionOwned(Integer authUserId, Integer propositionId) {
+        PropositionDevis p = propositionRepo.findById(propositionId)
+                .orElseThrow(() -> new IllegalArgumentException("Proposition introuvable: " + propositionId));
+        if (p.getNovice() == null || p.getNovice().getId() == null || !p.getNovice().getId().equals(authUserId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Non autorisé: vous ne pouvez agir que sur vos propositions");
+        }
+        if (p.getStatut() != StatutDevis.EN_ATTENTE) {
+            throw new IllegalStateException("Seules les propositions en attente peuvent être refusées");
+        }
+        p.setStatut(StatutDevis.REFUSER);
+        PropositionDevis saved = propositionRepo.save(p);
+        return map(saved);
+    }
+
     public EtapeWithIllustrationsResponse validateEtapeByOwner(Integer authUserId, Integer etapeId) {
         EtapeConstruction e = etapeRepo.findById(etapeId)
                 .orElseThrow(() -> new IllegalArgumentException("Étape introuvable: " + etapeId));
@@ -375,6 +424,34 @@ public class ProjetService {
         } else {
             r.setTotalEtapes(0);
             r.setEtapesValidees(0);
+        }
+        return r;
+    }
+
+    private PropositionDevisResponse map(PropositionDevis d) {
+        PropositionDevisResponse r = new PropositionDevisResponse();
+        r.setId(d.getId());
+        r.setMontant(d.getMontant());
+        r.setDescription(d.getDescription());
+        r.setFichierDevis(d.getFichierDevis());
+        r.setStatut(d.getStatut());
+        if (d.getSpecialite() != null) {
+            r.setSpecialiteId(d.getSpecialite().getId());
+        }
+        if (d.getProfessionnel() != null) {
+            var pro = d.getProfessionnel();
+            com.ngaso.Ngaso.dto.ProfessionnelBriefResponse pb = new com.ngaso.Ngaso.dto.ProfessionnelBriefResponse(
+                    pro.getId(),
+                    pro.getNom(),
+                    pro.getPrenom(),
+                    pro.getTelephone(),
+                    pro.getEmail(),
+                    pro.getEntreprise(),
+                    pro.getSpecialite() != null ? pro.getSpecialite().getId() : null,
+                    pro.getSpecialite() != null ? pro.getSpecialite().getLibelle() : null,
+                    pro.getRealisations()
+            );
+            r.setProfessionnel(pb);
         }
         return r;
     }

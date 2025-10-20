@@ -13,6 +13,7 @@ import com.ngaso.Ngaso.dto.DemandeProItemResponse;
 import com.ngaso.Ngaso.Models.enums.StatutDemande;
 import com.ngaso.Ngaso.dto.RealisationItemResponse;
 import com.ngaso.Ngaso.Models.entites.PropositionDevis;
+import com.ngaso.Ngaso.Models.enums.StatutDevis;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.MediaType;
@@ -151,7 +152,7 @@ public class ProfessionnelController {
     @PostMapping(value = "/me/projets/{projetId}/propositions", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<PropositionDevisResponse> proposerPourProjetMeMultipart(@PathVariable("projetId") Integer projetId,
                                                                                   @RequestPart("data") CreatePropositionRequest request,
-                                                                                  @RequestPart(value = "devis", required = false) MultipartFile devisFile) {
+                                                                                  @RequestPart(value = "devis", required = true) MultipartFile devisFile) {
         String principal = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Integer authUserId = Integer.parseInt(principal);
         PropositionDevis saved = propositionService.proposerPourProjet(authUserId, projetId, request, devisFile);
@@ -181,11 +182,28 @@ public class ProfessionnelController {
         return ResponseEntity.ok(demandeWorkflowService.refuser(authUserId, demandeId));
     }
 
+    @PostMapping("/me/propositions/{propositionId}/annuler")
+    public ResponseEntity<PropositionDevisResponse> annulerMaProposition(@PathVariable("propositionId") Integer propositionId) {
+        String principal = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Integer authUserId = Integer.parseInt(principal);
+        PropositionDevis saved = propositionService.annuler(authUserId, propositionId);
+        return ResponseEntity.ok(map(saved));
+    }
+
     @GetMapping("/me/demandes")
     public ResponseEntity<java.util.List<DemandeProItemResponse>> listMyDemandes(@RequestParam(value = "statut", required = false) StatutDemande statut) {
         String principal = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Integer authUserId = Integer.parseInt(principal);
         return ResponseEntity.ok(demandeWorkflowService.listDemandes(authUserId, statut));
+    }
+
+    @GetMapping("/me/propositions")
+    public ResponseEntity<java.util.List<PropositionDevisResponse>> listMyPropositions(@RequestParam(value = "statut", required = false) StatutDevis statut) {
+        String principal = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Integer authUserId = Integer.parseInt(principal);
+        java.util.List<PropositionDevis> list = propositionService.listMesPropositions(authUserId, statut);
+        java.util.List<PropositionDevisResponse> resp = list.stream().map(this::map).toList();
+        return ResponseEntity.ok(resp);
     }
 
     private PropositionDevisResponse map(PropositionDevis d) {
@@ -197,6 +215,21 @@ public class ProfessionnelController {
         r.setStatut(d.getStatut());
         if (d.getSpecialite() != null) {
             r.setSpecialiteId(d.getSpecialite().getId());
+        }
+        if (d.getProfessionnel() != null) {
+            var pro = d.getProfessionnel();
+            com.ngaso.Ngaso.dto.ProfessionnelBriefResponse pb = new com.ngaso.Ngaso.dto.ProfessionnelBriefResponse(
+                    pro.getId(),
+                    pro.getNom(),
+                    pro.getPrenom(),
+                    pro.getTelephone(),
+                    pro.getEmail(),
+                    pro.getEntreprise(),
+                    pro.getSpecialite() != null ? pro.getSpecialite().getId() : null,
+                    pro.getSpecialite() != null ? pro.getSpecialite().getLibelle() : null,
+                    pro.getRealisations()
+            );
+            r.setProfessionnel(pb);
         }
         return r;
     }
