@@ -10,6 +10,10 @@ import com.ngaso.Ngaso.dto.ProjetResponse;
 import com.ngaso.Ngaso.dto.EtapeWithIllustrationsResponse;
 import com.ngaso.Ngaso.dto.ProjetUpdateRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
+import com.ngaso.Ngaso.dto.ProfessionnelBriefResponse;
+import com.ngaso.Ngaso.dto.DemandeCreateRequest;
+import com.ngaso.Ngaso.dto.DemandeBriefResponse;
+import com.ngaso.Ngaso.dto.DemandeProjectItemResponse;
 
 import java.util.List;
 
@@ -86,6 +90,43 @@ public class ProjetController {
         String principal = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Integer authUserId = Integer.parseInt(principal);
         return ResponseEntity.ok(projetService.validateEtapeByOwner(authUserId, etapeId));
+    }
+
+    @GetMapping("/etapes/{etapeId}/professionnels")
+    public ResponseEntity<List<ProfessionnelBriefResponse>> listProfessionnelsForEtape(@PathVariable Integer etapeId) {
+        String principal = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Integer authUserId = Integer.parseInt(principal);
+        return ResponseEntity.ok(projetService.listProfessionnelsForEtapeOwned(authUserId, etapeId));
+    }
+
+    @PostMapping("/etapes/{etapeId}/demandes")
+    public ResponseEntity<Integer> createDemandeForEtape(@PathVariable Integer etapeId, @RequestBody DemandeCreateRequest request) {
+        String principal = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Integer authUserId = Integer.parseInt(principal);
+        Integer id = projetService.createDemandeForEtapeOwned(authUserId, etapeId, request);
+        return ResponseEntity.ok(id);
+    }
+
+    @GetMapping("/etapes/{etapeId}/demandes")
+    public ResponseEntity<List<DemandeBriefResponse>> listDemandesForEtape(@PathVariable Integer etapeId) {
+        String principal = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Integer authUserId = Integer.parseInt(principal);
+        return ResponseEntity.ok(projetService.listDemandesForEtapeOwned(authUserId, etapeId));
+    }
+
+    @GetMapping("/{id}/demandes")
+    public ResponseEntity<List<DemandeProjectItemResponse>> listDemandesForProjet(@PathVariable Integer id) {
+        String principal = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Integer authUserId = Integer.parseInt(principal);
+        return ResponseEntity.ok(projetService.listDemandesForProjetOwned(authUserId, id));
+    }
+
+    @PostMapping("/demandes/{demandeId}/annuler")
+    public ResponseEntity<Void> cancelDemande(@PathVariable Integer demandeId) {
+        String principal = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Integer authUserId = Integer.parseInt(principal);
+        projetService.cancelDemandeOwned(authUserId, demandeId);
+        return ResponseEntity.noContent().build();
     }
 }
 

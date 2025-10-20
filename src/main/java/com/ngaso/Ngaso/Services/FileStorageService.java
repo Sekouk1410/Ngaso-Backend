@@ -37,6 +37,24 @@ public class FileStorageService {
         return target.toString().replace('\\', '/');
     }
 
+    public String storeRealisation(Integer professionnelId, MultipartFile file) throws IOException {
+        if (professionnelId == null) {
+            throw new IllegalArgumentException("Identifiant professionnel manquant");
+        }
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Image de réalisation manquante");
+        }
+        Path dir = root.resolve(Paths.get("realisations", String.valueOf(professionnelId)));
+        if (!Files.exists(dir)) {
+            Files.createDirectories(dir);
+        }
+        String ext = extractExtension(file.getOriginalFilename());
+        String filename = UUID.randomUUID().toString() + (ext.isBlank() ? "" : ("." + ext));
+        Path target = dir.resolve(filename);
+        Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+        return target.toString().replace('\\', '/');
+    }
+
     private String extractExtension(String name) {
         if (name == null) return "";
         int i = name.lastIndexOf('.');

@@ -42,7 +42,11 @@ public class SecurityConfig {
                     "/projets/*/etapes",
                     "/projets/novices/*",
                     "/projets/*",
-                    "/projets/etapes/*/valider").hasRole("Novice")
+                    "/projets/etapes/*/valider",
+                    "/projets/etapes/*/professionnels",
+                    "/projets/etapes/*/demandes",
+                            "/projets/*/demandes",
+                            "projets/demandes/*/annuler").hasRole("Novice")
                 // Others must be authenticated
                 .anyRequest().authenticated()
             )
