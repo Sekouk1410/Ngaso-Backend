@@ -56,6 +56,7 @@ public class SecurityConfig {
                     .requestMatchers(
                     "/projets/*/etapes",
                     "/projets/novices/*",
+                    "/projets/me",
                     "/projets/*",
                     "/projets/etapes/*/valider",
                     "/projets/etapes/*/professionnels",

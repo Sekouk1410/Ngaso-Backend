@@ -49,6 +49,7 @@ public class ProjetService {
     private final DemandeServiceRepository demandeRepo;
     private final PropositionDevisRepository propositionRepo;
     private final ConversationService conversationService;
+    private final NotificationService notificationService;
 
     public ProjetService(
             ProjetConstructionRepository projetRepo,
@@ -58,7 +59,8 @@ public class ProjetService {
             ProfessionnelRepository professionnelRepo,
             DemandeServiceRepository demandeRepo,
             PropositionDevisRepository propositionRepo,
-            ConversationService conversationService
+            ConversationService conversationService,
+            NotificationService notificationService
     ) {
         this.projetRepo = projetRepo;
         this.noviceRepo = noviceRepo;
@@ -68,6 +70,7 @@ public class ProjetService {
         this.demandeRepo = demandeRepo;
         this.propositionRepo = propositionRepo;
         this.conversationService = conversationService;
+        this.notificationService = notificationService;
     }
 
     public ProjetResponse createProjet(ProjetCreateRequest req) {
@@ -264,6 +267,9 @@ public class ProjetService {
         d.setStatut(StatutDemande.EN_ATTENTE);
         d.setDateCréation(new Date());
         DemandeService saved = demandeRepo.save(d);
+        // Notify professional about new service request
+        notificationService.notify(pro, com.ngaso.Ngaso.Models.enums.TypeNotification.DemandeService,
+                "Nouvelle demande de service pour l'étape " + (m != null ? m.getNom() : String.valueOf(e.getIdEtape())));
         return saved.getId();
     }
 
@@ -355,6 +361,11 @@ public class ProjetService {
         PropositionDevis saved = propositionRepo.save(p);
         // Ouvrir/Créer la conversation liée à cette proposition acceptée
         conversationService.openOrCreateForProposition(saved);
+        // Notify professional that proposition is accepted
+        if (saved.getProfessionnel() != null) {
+            notificationService.notify(saved.getProfessionnel(), com.ngaso.Ngaso.Models.enums.TypeNotification.PropositionDevis,
+                    "Votre proposition de devis a été acceptée.");
+        }
         return map(saved);
     }
 
@@ -370,6 +381,11 @@ public class ProjetService {
         }
         p.setStatut(StatutDevis.REFUSER);
         PropositionDevis saved = propositionRepo.save(p);
+        // Notify professional that proposition is refused
+        if (saved.getProfessionnel() != null) {
+            notificationService.notify(saved.getProfessionnel(), com.ngaso.Ngaso.Models.enums.TypeNotification.PropositionDevis,
+                    "Votre proposition de devis a été refusée.");
+        }
         return map(saved);
     }
 
