@@ -53,6 +53,12 @@ public class SecurityConfig {
                     "/conversations/*/messages",
                     "/conversations/*/messages/upload"
                 ).hasAnyRole("Novice", "Professionnel")
+                // Notifications (Novice & Professionnel)
+                .requestMatchers(
+                    "/notifications/me",
+                    "/notifications/me/count",
+                    "/notifications/me/read"
+                ).hasAnyRole("Novice", "Professionnel")
                     .requestMatchers(
                     "/projets/*/etapes",
                     "/projets/novices/*",
