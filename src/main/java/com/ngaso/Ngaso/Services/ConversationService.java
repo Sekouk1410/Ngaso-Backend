@@ -22,15 +22,18 @@ public class ConversationService {
     private final MessageRepository messageRepository;
     private final UtilisateurRepository utilisateurRepository;
     private final FileStorageService fileStorageService;
+    private final NotificationService notificationService;
 
     public ConversationService(ConversationRepository conversationRepository,
                                MessageRepository messageRepository,
                                UtilisateurRepository utilisateurRepository,
-                               FileStorageService fileStorageService) {
+                               FileStorageService fileStorageService,
+                               NotificationService notificationService) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
         this.utilisateurRepository = utilisateurRepository;
         this.fileStorageService = fileStorageService;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -73,8 +76,7 @@ public class ConversationService {
         Conversation c = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new IllegalArgumentException("Conversation introuvable"));
         ensureParticipant(authUserId, c);
-        Utilisateur sender = utilisateurRepository.findById(authUserId)
-                .orElseThrow(() -> new IllegalArgumentException("Expéditeur introuvable"));
+        Utilisateur sender = resolveSenderFromConversation(authUserId, c);
         Message m = new Message();
         m.setConversation(c);
         m.setExpediteur(sender);
@@ -83,6 +85,8 @@ public class ConversationService {
         m.setDateEnvoi(new java.util.Date());
         m.setEstLu(Boolean.FALSE);
         Message saved = messageRepository.save(m);
+        // Notify the other participant
+        notifyOtherParticipant(c, sender, content != null ? content : "Pièce jointe envoyée");
         return mapMessage(saved);
     }
 
@@ -94,8 +98,7 @@ public class ConversationService {
         Conversation c = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new IllegalArgumentException("Conversation introuvable"));
         ensureParticipant(authUserId, c);
-        Utilisateur sender = utilisateurRepository.findById(authUserId)
-                .orElseThrow(() -> new IllegalArgumentException("Expéditeur introuvable"));
+        Utilisateur sender = resolveSenderFromConversation(authUserId, c);
         String url;
         try {
             url = fileStorageService.storeConversationAttachment(conversationId, file);
@@ -110,7 +113,25 @@ public class ConversationService {
         m.setDateEnvoi(new java.util.Date());
         m.setEstLu(Boolean.FALSE);
         Message saved = messageRepository.save(m);
+        // Notify the other participant
+        notifyOtherParticipant(c, sender, content != null ? content : "Pièce jointe envoyée");
         return mapMessage(saved);
+    }
+
+    private Utilisateur resolveSenderFromConversation(Integer authUserId, Conversation c) {
+        if (c.getProposition() == null) {
+            throw new IllegalStateException("Conversation sans proposition liée");
+        }
+        var prop = c.getProposition();
+        var novice = prop.getNovice();
+        var pro = prop.getProfessionnel();
+        if (novice != null && novice.getId() != null && novice.getId().equals(authUserId)) {
+            return novice; // Novice étend Utilisateur
+        }
+        if (pro != null && pro.getId() != null && pro.getId().equals(authUserId)) {
+            return pro; // Professionnel étend Utilisateur
+        }
+        throw new org.springframework.security.access.AccessDeniedException("Non autorisé: vous n'êtes pas participant de cette conversation");
     }
 
     private void ensureParticipant(Integer authUserId, Conversation c) {
@@ -146,6 +167,20 @@ public class ConversationService {
         r.setContent(m.getContenu());
         r.setAttachmentUrl(m.getAttachmentUrl());
         r.setSentAt(m.getDateEnvoi());
+        // Determine sender role and participant id (Novice or Professionnel)
+        if (m.getConversation() != null && m.getConversation().getProposition() != null && m.getExpediteur() != null) {
+            var prop = m.getConversation().getProposition();
+            Integer noviceId = prop.getNovice() != null ? prop.getNovice().getId() : null;
+            Integer proId = prop.getProfessionnel() != null ? prop.getProfessionnel().getId() : null;
+            Integer senderUserId = m.getExpediteur().getId();
+            if (noviceId != null && noviceId.equals(senderUserId)) {
+                r.setSenderRole("NOVICE");
+                r.setSenderParticipantId(noviceId);
+            } else if (proId != null && proId.equals(senderUserId)) {
+                r.setSenderRole("PROFESSIONNEL");
+                r.setSenderParticipantId(proId);
+            }
+        }
         return r;
     }
 
@@ -202,6 +237,20 @@ public class ConversationService {
         messageRepository.delete(m);
         if (toDelete != null && !toDelete.isBlank()) {
             try { fileStorageService.deleteByPublicUrl(toDelete); } catch (java.io.IOException ignored) {}
+        }
+    }
+
+    private void notifyOtherParticipant(Conversation c, Utilisateur sender, String preview) {
+        if (c == null || c.getProposition() == null || sender == null) return;
+        var prop = c.getProposition();
+        Utilisateur target = null;
+        if (prop.getNovice() != null && Objects.equals(sender.getId(), prop.getNovice().getId())) {
+            target = prop.getProfessionnel();
+        } else if (prop.getProfessionnel() != null && Objects.equals(sender.getId(), prop.getProfessionnel().getId())) {
+            target = prop.getNovice();
+        }
+        if (target != null) {
+            notificationService.notify(target, com.ngaso.Ngaso.Models.enums.TypeNotification.Message, preview);
         }
     }
 }

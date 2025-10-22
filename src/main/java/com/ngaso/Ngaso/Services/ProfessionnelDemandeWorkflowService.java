@@ -19,11 +19,14 @@ public class ProfessionnelDemandeWorkflowService {
 
     private final DemandeServiceRepository demandeRepo;
     private final ProfessionnelRepository proRepo;
+    private final NotificationService notificationService;
 
     public ProfessionnelDemandeWorkflowService(DemandeServiceRepository demandeRepo,
-                                               ProfessionnelRepository proRepo) {
+                                               ProfessionnelRepository proRepo,
+                                               NotificationService notificationService) {
         this.demandeRepo = demandeRepo;
         this.proRepo = proRepo;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -43,6 +46,11 @@ public class ProfessionnelDemandeWorkflowService {
         }
         d.setStatut(StatutDemande.ACCEPTER);
         demandeRepo.save(d);
+        // Notify novice that demande was accepted
+        if (d.getNovice() != null) {
+            notificationService.notify(d.getNovice(), com.ngaso.Ngaso.Models.enums.TypeNotification.DemandeService,
+                    "Votre demande de service a été acceptée.");
+        }
         DemandeUpdateResponse resp = new DemandeUpdateResponse();
         resp.setId(d.getId());
         resp.setStatut(d.getStatut());
@@ -66,6 +74,11 @@ public class ProfessionnelDemandeWorkflowService {
         }
         d.setStatut(StatutDemande.REFUSER);
         demandeRepo.save(d);
+        // Notify novice that demande was refused
+        if (d.getNovice() != null) {
+            notificationService.notify(d.getNovice(), com.ngaso.Ngaso.Models.enums.TypeNotification.DemandeService,
+                    "Votre demande de service a été refusée.");
+        }
         DemandeUpdateResponse resp = new DemandeUpdateResponse();
         resp.setId(d.getId());
         resp.setStatut(d.getStatut());

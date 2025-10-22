@@ -27,19 +27,22 @@ public class ProfessionnelPropositionService {
     private final SpecialiteRepository specialiteRepository;
     private final FileStorageService fileStorageService;
     private final DemandeServiceRepository demandeServiceRepository;
+    private final NotificationService notificationService;
 
     public ProfessionnelPropositionService(ProfessionnelRepository professionnelRepository,
                                            ProjetConstructionRepository projetConstructionRepository,
                                            PropositionDevisRepository propositionDevisRepository,
                                            SpecialiteRepository specialiteRepository,
                                            FileStorageService fileStorageService,
-                                           DemandeServiceRepository demandeServiceRepository) {
+                                           DemandeServiceRepository demandeServiceRepository,
+                                           NotificationService notificationService) {
         this.professionnelRepository = professionnelRepository;
         this.projetConstructionRepository = projetConstructionRepository;
         this.propositionDevisRepository = propositionDevisRepository;
         this.specialiteRepository = specialiteRepository;
         this.fileStorageService = fileStorageService;
         this.demandeServiceRepository = demandeServiceRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -85,6 +88,9 @@ public class ProfessionnelPropositionService {
             devis.setSpecialite(s);
         }
         PropositionDevis saved = propositionDevisRepository.save(devis);
+        // Notify novice about new proposition
+        notificationService.notify(saved.getNovice(), com.ngaso.Ngaso.Models.enums.TypeNotification.PropositionDevis,
+                "Nouvelle proposition de devis pour votre projet: " + (projet.getTitre() != null ? projet.getTitre() : String.valueOf(projet.getIdProjet())));
         return saved;
     }
 

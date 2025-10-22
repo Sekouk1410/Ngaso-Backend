@@ -6,6 +6,8 @@ public class MessageResponse {
     private Integer id;
     private Integer conversationId;
     private Integer senderId;
+    private String senderRole; // NOVICE or PROFESSIONNEL
+    private Integer senderParticipantId; // id du Novice ou du Professionnel
     private String content;
     private String attachmentUrl;
     private Date sentAt;
@@ -18,6 +20,12 @@ public class MessageResponse {
 
     public Integer getSenderId() { return senderId; }
     public void setSenderId(Integer senderId) { this.senderId = senderId; }
+
+    public String getSenderRole() { return senderRole; }
+    public void setSenderRole(String senderRole) { this.senderRole = senderRole; }
+
+    public Integer getSenderParticipantId() { return senderParticipantId; }
+    public void setSenderParticipantId(Integer senderParticipantId) { this.senderParticipantId = senderParticipantId; }
 
     public String getContent() { return content; }
     public void setContent(String content) { this.content = content; }

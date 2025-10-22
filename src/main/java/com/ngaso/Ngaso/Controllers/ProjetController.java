@@ -35,6 +35,13 @@ public class ProjetController {
         return ResponseEntity.ok(projetService.createProjetForNovice(noviceId, request));
     }
 
+    @PostMapping("/me")
+    public ResponseEntity<ProjetResponse> createForMe(@RequestBody ProjetCreateRequest request) {
+        String principal = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Integer authUserId = Integer.parseInt(principal);
+        return ResponseEntity.ok(projetService.createProjetForNovice(authUserId, request));
+    }
+
     @GetMapping("/novices/{noviceId}")
     public ResponseEntity<List<ProjetResponse>> listForNovice(@PathVariable Integer noviceId) {
         String principal = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
