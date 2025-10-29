@@ -1,10 +1,14 @@
 package com.ngaso.Ngaso.Controllers;
 
+import com.ngaso.Ngaso.dto.ChangePasswordRequest;
 import com.ngaso.Ngaso.Services.AuthService;
 import com.ngaso.Ngaso.dto.AuthLoginRequest;
 import com.ngaso.Ngaso.dto.AuthLoginResponse;
 import com.ngaso.Ngaso.dto.NoviceSignupRequest;
 import com.ngaso.Ngaso.dto.ProfessionnelSignupRequest;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -46,6 +50,41 @@ public class AuthController {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<String> handleAccessDenied(AccessDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ex.getMessage());
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<String> changePassword(@RequestBody ChangePasswordRequest request) {
+        try {
+            System.out.println("Début du changement de mot de passe");
+            System.out.println("Requête reçue - Ancien mot de passe: " + request.getOldPassword() + ", Nouveau mot de passe: " + request.getNewPassword());
+            
+            // Récupérer l'ID de l'utilisateur connecté
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                System.out.println("Erreur: Utilisateur non authentifié");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Non authentifié");
+            }
+            
+            // Le principal est le nom d'utilisateur (ID utilisateur sous forme de chaîne)
+            String username = authentication.getName();
+            System.out.println("Tentative de changement de mot de passe pour l'utilisateur ID: " + username);
+            
+            authService.changePassword(Integer.parseInt(username), request);
+            System.out.println("Mot de passe modifié avec succès pour l'utilisateur ID: " + username);
+            return ResponseEntity.ok("Mot de passe modifié avec succès");
+            
+        } catch (NumberFormatException e) {
+            System.out.println("Erreur: Format d'ID utilisateur invalide: " + e.getMessage());
+            return ResponseEntity.badRequest().body("ID utilisateur invalide");
+        } catch (IllegalArgumentException e) {
+            System.out.println("Erreur de validation: " + e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            System.out.println("Erreur inattendue lors du changement de mot de passe: ");
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Erreur lors du changement de mot de passe: " + e.getMessage());
+        }
     }
 }
 

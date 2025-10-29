@@ -32,6 +32,8 @@ public class SecurityConfig {
                 .requestMatchers("/auth/login").permitAll()
                 .requestMatchers("/auth/register/novice").permitAll()
                 .requestMatchers("/auth/register/professionnel").permitAll()
+                // Password change (Novice & Professionnel uniquement)
+                .requestMatchers("/auth/change-password").hasAnyRole("Novice", "Professionnel")
                 // Swagger/OpenAPI docs
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 // Public listing of specialites (front needs it without auth)
@@ -59,6 +61,8 @@ public class SecurityConfig {
                     "/notifications/me/count",
                     "/notifications/me/read"
                 ).hasAnyRole("Novice", "Professionnel")
+                // User profile (Novice & Professionnel)
+                .requestMatchers("/users/me/photo").hasAnyRole("Novice", "Professionnel")
                     .requestMatchers(
                     "/projets/*/etapes",
                     "/projets/novices/*",

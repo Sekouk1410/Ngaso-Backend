@@ -5,6 +5,7 @@ import com.ngaso.Ngaso.DAO.ProfessionnelRepository;
 import com.ngaso.Ngaso.DAO.UtilisateurRepository;
 import com.ngaso.Ngaso.DAO.AdministrateurRepository;
 import com.ngaso.Ngaso.DAO.SpecialiteRepository;
+import com.ngaso.Ngaso.dto.ChangePasswordRequest;
 import com.ngaso.Ngaso.Models.entites.Novice;
 import com.ngaso.Ngaso.Models.entites.Professionnel;
 import com.ngaso.Ngaso.Models.entites.Utilisateur;
@@ -116,7 +117,27 @@ public class AuthService {
         return new AuthLoginResponse(saved.getId(), saved.getRole(), "Inscription réussie", null);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
+    public void changePassword(Integer userId, ChangePasswordRequest request) {
+        // Vérifier que les mots de passe correspondent
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new IllegalArgumentException("La confirmation du nouveau mot de passe ne correspond pas");
+        }
+
+        // Trouver l'utilisateur
+        Utilisateur user = utilisateurRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Utilisateur non trouvé"));
+
+        // Vérifier l'ancien mot de passe
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("Ancien mot de passe incorrect");
+        }
+
+        // Mettre à jour le mot de passe
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        utilisateurRepository.save(user);
+    }
+
     public AuthLoginResponse login(AuthLoginRequest request) {
         // Admin: login via email + password (normalize input)
         if (request.getEmail() != null && !request.getEmail().isBlank()) {

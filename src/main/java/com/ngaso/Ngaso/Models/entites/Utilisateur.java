@@ -33,6 +33,9 @@ public abstract class Utilisateur {
     @Column(nullable = false)
     private String password;
 
+    // Chemin de la photo de profil (stockée côté serveur)
+    private String photoProfil;
+
     @Enumerated(EnumType.STRING)
     private Role role;
 
