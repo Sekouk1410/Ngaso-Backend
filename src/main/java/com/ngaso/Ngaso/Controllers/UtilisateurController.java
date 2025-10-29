@@ -23,7 +23,8 @@ public class UtilisateurController {
     }
 
     @PostMapping(value = "/me/photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> uploadMyPhoto(@org.springframework.web.bind.annotation.RequestParam("image") MultipartFile image) {
+    public ResponseEntity<?> uploadMyPhoto(@org.springframework.web.bind.annotation.RequestParam("image") MultipartFile image,
+                                           jakarta.servlet.http.HttpServletRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Non authentifié");
@@ -32,7 +33,14 @@ public class UtilisateurController {
             String username = authentication.getName(); // userId as string
             Integer userId = Integer.parseInt(username);
             String storedPath = userProfileService.updatePhoto(userId, image);
-            return ResponseEntity.ok(storedPath);
+            int idx = storedPath.replace('\\','/').indexOf("/uploads/");
+            String relative = idx >= 0 ? storedPath.replace('\\','/').substring(idx + "/uploads/".length()) : storedPath;
+            String baseUrl = request.getScheme() + "://" + request.getServerName() + 
+                    (request.getServerPort() != 80 && request.getServerPort() != 443 ? ":" + request.getServerPort() : "") +
+                    request.getContextPath();
+            String photoUrl = baseUrl + "/uploads/" + relative;
+            java.util.Map<String, String> body = java.util.Map.of("photoUrl", photoUrl);
+            return ResponseEntity.ok(body);
         } catch (NumberFormatException e) {
             return ResponseEntity.badRequest().body("ID utilisateur invalide");
         } catch (IllegalArgumentException e) {
