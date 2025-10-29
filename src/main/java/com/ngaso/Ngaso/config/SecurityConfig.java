@@ -61,6 +61,8 @@ public class SecurityConfig {
                     "/notifications/me/count",
                     "/notifications/me/read"
                 ).hasAnyRole("Novice", "Professionnel")
+                // User profile (Novice & Professionnel)
+                .requestMatchers("/users/me/photo").hasAnyRole("Novice", "Professionnel")
                     .requestMatchers(
                     "/projets/*/etapes",
                     "/projets/novices/*",
