@@ -146,6 +146,16 @@ public class ProjetService {
     }
 
     @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<ProjetResponse> listEnCours(int page, int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(
+                Math.max(page, 0), Math.max(size, 1),
+                org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "dateCréation")
+        );
+        return projetRepo.findByEtat(EtatProjet.En_Cours, pageable)
+                .map(this::map);
+    }
+
+    @Transactional(readOnly = true)
     public ProjetResponse getProjet(Integer id) {
         Optional<ProjetConstruction> opt = projetRepo.findById(id);
         ProjetConstruction p = opt.orElseThrow(() -> new IllegalArgumentException("Projet introuvable: " + id));
