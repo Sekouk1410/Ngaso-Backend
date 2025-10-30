@@ -6,6 +6,7 @@ import com.ngaso.Ngaso.Models.entites.ProjetConstruction;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
 import com.ngaso.Ngaso.Models.enums.EtatProjet;
 
 public interface ProjetConstructionRepository extends JpaRepository<ProjetConstruction, Integer> {
@@ -18,4 +19,6 @@ public interface ProjetConstructionRepository extends JpaRepository<ProjetConstr
     List<ProjetConstruction> findLastGlobal(Pageable pageable);
 
     List<ProjetConstruction> findByEtat(EtatProjet etat);
+
+    Page<ProjetConstruction> findByEtat(EtatProjet etat, Pageable pageable);
 }

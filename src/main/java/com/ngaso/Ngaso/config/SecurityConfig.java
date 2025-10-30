@@ -43,6 +43,8 @@ public class SecurityConfig {
                 .requestMatchers("/admin/**").hasRole("Admin")
                 // Professionnel scope
                 .requestMatchers("/professionnels/**").hasRole("Professionnel")
+                // Projets en cours visible uniquement par les professionnels
+                .requestMatchers("/projets/en-cours").hasRole("Professionnel")
                 // Novice scope
                 .requestMatchers(
                     "/novices/me/propositions",

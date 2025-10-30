@@ -63,8 +63,19 @@ public class ProjetController {
     }
 
     @GetMapping("/en-cours")
-    public ResponseEntity<List<ProjetResponse>> listEnCours() {
-        return ResponseEntity.ok(projetService.listEnCours());
+    public ResponseEntity<com.ngaso.Ngaso.dto.PagedProjetResponse> listEnCours(
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "0") int page,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "10") int size) {
+        org.springframework.data.domain.Page<com.ngaso.Ngaso.dto.ProjetResponse> p = projetService.listEnCours(page, size);
+        com.ngaso.Ngaso.dto.PagedProjetResponse body = new com.ngaso.Ngaso.dto.PagedProjetResponse(
+                p.getContent(),
+                p.getNumber(),
+                p.getSize(),
+                p.getTotalElements(),
+                p.getTotalPages(),
+                p.hasNext()
+        );
+        return ResponseEntity.ok(body);
     }
 
     @GetMapping("/{id}")
