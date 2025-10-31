@@ -8,6 +8,7 @@ import com.ngaso.Ngaso.DAO.ProjetConstructionRepository;
 import com.ngaso.Ngaso.Models.entites.Professionnel;
 import com.ngaso.Ngaso.Models.entites.ProjetConstruction;
 import com.ngaso.Ngaso.Models.enums.StatutDevis;
+import com.ngaso.Ngaso.Models.enums.StatutDemande;
 import com.ngaso.Ngaso.dto.ProfessionnelDashboardResponse;
 import com.ngaso.Ngaso.dto.ProjetBrief;
 import org.springframework.stereotype.Service;
@@ -17,7 +18,7 @@ import org.springframework.data.domain.PageRequest;
 
 @Service
 @Transactional(readOnly = true)
-public class ProfessionnelDashboardService {
+public class  ProfessionnelDashboardService {
 
     private final ProfessionnelRepository professionnelRepository;
     private final PropositionDevisRepository propositionDevisRepository;
@@ -49,7 +50,8 @@ public class ProfessionnelDashboardService {
         long propositionsValidees = propositionDevisRepository
                 .countByProfessionnelIdAndStatut(professionnelId, StatutDevis.ACCEPTER);
 
-        long demandesTotal = demandeServiceRepository.countByProfessionnelId(professionnelId);
+        long demandesTotal = demandeServiceRepository
+                .countByProfessionnel_IdAndEtapeIsNotNullAndStatut(professionnelId, StatutDemande.EN_ATTENTE);
         long messagesNonLus = messageRepository.countUnreadForProfessionnel(professionnelId);
 
         var derniersProjetsEntities = projetConstructionRepository

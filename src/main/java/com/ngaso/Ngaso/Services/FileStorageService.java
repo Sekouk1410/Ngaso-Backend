@@ -13,7 +13,7 @@ import java.util.UUID;
 @Service
 public class FileStorageService {
 
-    private final Path root = Paths.get("uploads").toAbsolutePath().normalize();
+    private final Path root = Paths.get("C:/ngaso/uploads").toAbsolutePath().normalize();
 
     public FileStorageService() throws IOException {
         if (!Files.exists(root)) {

@@ -13,4 +13,6 @@ public interface DemandeServiceRepository extends JpaRepository<DemandeService, 
     boolean existsByEtape_IdEtapeAndNovice_IdAndProfessionnel_IdAndStatut(Integer etapeId, Integer noviceId, Integer professionnelId, StatutDemande statut);
     List<DemandeService> findByProfessionnel_Id(Integer professionnelId);
     List<DemandeService> findByProfessionnel_IdAndStatut(Integer professionnelId, StatutDemande statut);
+    long countByProfessionnel_IdAndEtapeIsNotNull(Integer professionnelId);
+    long countByProfessionnel_IdAndEtapeIsNotNullAndStatut(Integer professionnelId, StatutDemande statut);
 }

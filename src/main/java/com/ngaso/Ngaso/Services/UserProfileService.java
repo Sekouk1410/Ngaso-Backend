@@ -34,8 +34,7 @@ public class UserProfileService {
 
         try {
             System.out.println("[UserProfileService] Upload démarré - userId=" + userId + ", originalName=" + file.getOriginalFilename() + ", size=" + file.getSize());
-            String base = System.getProperty("user.dir");
-            Path baseDir = Paths.get(base, "uploads", "avatars");
+            Path baseDir = Paths.get("C:/ngaso/uploads", "avatars");
             Files.createDirectories(baseDir);
 
             String original = file.getOriginalFilename() == null ? "image" : file.getOriginalFilename();
@@ -47,11 +46,11 @@ public class UserProfileService {
                 Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
             }
 
-            String storedPath = target.toString().replace('\\', '/');
-            user.setPhotoProfil(storedPath);
+            String publicUrl = "/uploads/avatars/" + safeName;
+            user.setPhotoProfil(publicUrl);
             utilisateurRepository.save(user);
-            System.out.println("[UserProfileService] Upload réussi - path=" + storedPath);
-            return storedPath;
+            System.out.println("[UserProfileService] Upload réussi - url=" + publicUrl);
+            return publicUrl;
         } catch (IOException ex) {
             ex.printStackTrace();
             throw new IllegalArgumentException("Echec du téléchargement de l'image de profil: " + ex.getMessage());

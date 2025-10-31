@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 @Service
 public class ProfessionnelPropositionService {
@@ -65,6 +67,24 @@ public class ProfessionnelPropositionService {
             DemandeService savedDemande = demandeServiceRepository.save(demande);
             projet.setDemande(savedDemande);
             projetConstructionRepository.save(projet);
+        }
+
+        // Règles d'envoi (par projet):
+        // - max 2 propositions par pro pour le même projet (via la même demande liée au projet),
+        // - une nouvelle proposition n'est possible que si la précédente a été REFUSER.
+        Integer demandeId = projet.getDemande() != null ? projet.getDemande().getId() : null;
+        if (demandeId != null) {
+            long attempts = propositionDevisRepository.countByProfessionnel_IdAndDemande_Id(professionnelId, demandeId);
+            if (attempts >= 2) {
+                throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Vous avez déjà utilisé vos deux chances pour ce projet");
+            }
+            if (attempts >= 1) {
+                var lastOpt = propositionDevisRepository.findTopByProfessionnel_IdAndDemande_IdOrderByIdDesc(professionnelId, demandeId);
+                var last = lastOpt.orElse(null);
+                if (last != null && last.getStatut() != StatutDevis.REFUSER) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Vous ne pouvez envoyer une nouvelle proposition que si la précédente a été rejetée");
+                }
+            }
         }
 
         PropositionDevis devis = new PropositionDevis();

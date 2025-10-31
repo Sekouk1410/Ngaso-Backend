@@ -4,18 +4,13 @@ import com.ngaso.Ngaso.Models.entites.Professionnel;
 import com.ngaso.Ngaso.Services.AdminService;
 import com.ngaso.Ngaso.DAO.SpecialiteRepository;
 import com.ngaso.Ngaso.Models.entites.Specialite;
-import com.ngaso.Ngaso.dto.SpecialiteCreateRequest;
-import com.ngaso.Ngaso.dto.UtilisateurSummaryResponse;
-import com.ngaso.Ngaso.dto.ProfessionnelSummaryResponse;
-import com.ngaso.Ngaso.dto.ModeleEtapeCreateRequest;
-import com.ngaso.Ngaso.dto.ModeleEtapeResponse;
-import com.ngaso.Ngaso.dto.IllustrationCreateRequest;
-import com.ngaso.Ngaso.dto.IllustrationResponse;
+import com.ngaso.Ngaso.dto.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/admin")
@@ -47,8 +42,12 @@ public class AdminController {
     }
 
     @GetMapping("/specialites")
-    public ResponseEntity<List<Specialite>> listSpecialites() {
-        return ResponseEntity.ok(specialiteRepository.findAll());
+    public ResponseEntity<List<SpecialiteResponse>> listSpecialites() {
+        List<SpecialiteResponse> result = specialiteRepository.findAll()
+                .stream()
+                .map(s -> new SpecialiteResponse(s.getId(), s.getLibelle()))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/utilisateurs")

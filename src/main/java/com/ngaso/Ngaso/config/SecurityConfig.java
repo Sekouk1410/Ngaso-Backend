@@ -32,13 +32,14 @@ public class SecurityConfig {
                 .requestMatchers("/auth/login").permitAll()
                 .requestMatchers("/auth/register/novice").permitAll()
                 .requestMatchers("/auth/register/professionnel").permitAll()
+                .requestMatchers("/api/v1/auth/**").permitAll()
                 // Password change (Novice & Professionnel uniquement)
                 .requestMatchers("/auth/change-password").hasAnyRole("Novice", "Professionnel")
                 // Swagger/OpenAPI docs
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 // Public listing of specialites (front needs it without auth)
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/admin/specialites").permitAll()
-                .requestMatchers("/uploads/**").permitAll()
+                .requestMatchers("/uploads/**").authenticated()
                 // Admin scope
                 .requestMatchers("/admin/**").hasRole("Admin")
                 // Professionnel scope
