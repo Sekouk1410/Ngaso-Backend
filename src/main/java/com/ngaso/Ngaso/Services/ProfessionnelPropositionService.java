@@ -94,6 +94,7 @@ public class ProfessionnelPropositionService {
         devis.setMontant(req.getMontant());
         devis.setDescription(req.getDescription());
         devis.setStatut(StatutDevis.EN_ATTENTE);
+        devis.setDateProposition(new java.util.Date());
         if (devisFile != null && !devisFile.isEmpty()) {
             try {
                 String path = fileStorageService.storeDevis(devisFile);

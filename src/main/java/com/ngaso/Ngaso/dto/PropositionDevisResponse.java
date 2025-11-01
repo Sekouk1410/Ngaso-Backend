@@ -1,6 +1,7 @@
 package com.ngaso.Ngaso.dto;
 
 import com.ngaso.Ngaso.Models.enums.StatutDevis;
+import java.util.Date;
 
 public class PropositionDevisResponse {
     private Integer id;
@@ -10,6 +11,8 @@ public class PropositionDevisResponse {
     private String fichierDevis;
     private StatutDevis statut;
     private ProfessionnelBriefResponse professionnel;
+    private String projetTitre;
+    private Date dateProposition;
 
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }
@@ -31,4 +34,10 @@ public class PropositionDevisResponse {
 
     public ProfessionnelBriefResponse getProfessionnel() { return professionnel; }
     public void setProfessionnel(ProfessionnelBriefResponse professionnel) { this.professionnel = professionnel; }
+
+    public String getProjetTitre() { return projetTitre; }
+    public void setProjetTitre(String projetTitre) { this.projetTitre = projetTitre; }
+
+    public Date getDateProposition() { return dateProposition; }
+    public void setDateProposition(Date dateProposition) { this.dateProposition = dateProposition; }
 }
