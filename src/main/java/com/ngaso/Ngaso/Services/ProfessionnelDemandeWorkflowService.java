@@ -93,8 +93,8 @@ public class ProfessionnelDemandeWorkflowService {
             throw new AccessDeniedException("Compte professionnel non validé");
         }
         List<DemandeService> demandes = (statut == null)
-                ? demandeRepo.findByProfessionnel_Id(professionnelId)
-                : demandeRepo.findByProfessionnel_IdAndStatut(professionnelId, statut);
+                ? demandeRepo.findByProfessionnel_IdAndEtapeIsNotNull(professionnelId)
+                : demandeRepo.findByProfessionnel_IdAndEtapeIsNotNullAndStatut(professionnelId, statut);
         return demandes.stream().map(d -> new DemandeProItemResponse(
                 d.getId(),
                 d.getMessage(),

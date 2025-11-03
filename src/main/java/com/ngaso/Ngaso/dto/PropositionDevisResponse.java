@@ -13,6 +13,8 @@ public class PropositionDevisResponse {
     private ProfessionnelBriefResponse professionnel;
     private String projetTitre;
     private Date dateProposition;
+    private String noviceNom;
+    private String novicePrenom;
 
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }
@@ -40,4 +42,10 @@ public class PropositionDevisResponse {
 
     public Date getDateProposition() { return dateProposition; }
     public void setDateProposition(Date dateProposition) { this.dateProposition = dateProposition; }
+
+    public String getNoviceNom() { return noviceNom; }
+    public void setNoviceNom(String noviceNom) { this.noviceNom = noviceNom; }
+
+    public String getNovicePrenom() { return novicePrenom; }
+    public void setNovicePrenom(String novicePrenom) { this.novicePrenom = novicePrenom; }
 }

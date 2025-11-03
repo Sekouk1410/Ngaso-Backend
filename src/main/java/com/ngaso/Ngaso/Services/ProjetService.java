@@ -301,7 +301,8 @@ public class ProjetService {
                         d.getProfessionnel() != null ? d.getProfessionnel().getId() : null,
                         d.getProfessionnel() != null ? d.getProfessionnel().getNom() : null,
                         d.getProfessionnel() != null ? d.getProfessionnel().getPrenom() : null,
-                        d.getProfessionnel() != null ? d.getProfessionnel().getEntreprise() : null
+                        d.getProfessionnel() != null ? d.getProfessionnel().getEntreprise() : null,
+                        p != null ? p.getBudget() : null
                 ))
                 .collect(java.util.stream.Collectors.toList());
     }
@@ -466,6 +467,13 @@ public class ProjetService {
         r.setDescription(d.getDescription());
         r.setFichierDevis(d.getFichierDevis());
         r.setStatut(d.getStatut());
+        if (d.getDemande() != null && d.getDemande().getNovice() != null) {
+            r.setNoviceNom(d.getDemande().getNovice().getNom());
+            r.setNovicePrenom(d.getDemande().getNovice().getPrenom());
+        }
+        if (d.getDemande() != null && d.getDemande().getProjets() != null && !d.getDemande().getProjets().isEmpty()) {
+            r.setProjetTitre(d.getDemande().getProjets().get(0).getTitre());
+        }
         if (d.getSpecialite() != null) {
             r.setSpecialiteId(d.getSpecialite().getId());
         }

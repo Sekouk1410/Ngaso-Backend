@@ -7,6 +7,8 @@ public class ConversationItemResponse {
     private Integer propositionId;
     private Integer noviceId;
     private Integer professionnelId;
+    private String noviceNom;
+    private String novicePrenom;
     private String lastMessage;
     private Date lastMessageAt;
     private Boolean active;
@@ -22,6 +24,12 @@ public class ConversationItemResponse {
 
     public Integer getProfessionnelId() { return professionnelId; }
     public void setProfessionnelId(Integer professionnelId) { this.professionnelId = professionnelId; }
+
+    public String getNoviceNom() { return noviceNom; }
+    public void setNoviceNom(String noviceNom) { this.noviceNom = noviceNom; }
+
+    public String getNovicePrenom() { return novicePrenom; }
+    public void setNovicePrenom(String novicePrenom) { this.novicePrenom = novicePrenom; }
 
     public String getLastMessage() { return lastMessage; }
     public void setLastMessage(String lastMessage) { this.lastMessage = lastMessage; }

@@ -21,4 +21,5 @@ public class DemandeBriefResponse {
     private String professionnelNom;
     private String professionnelPrenom;
     private String professionnelEntreprise;
+    private Double projetBudget;
 }

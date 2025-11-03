@@ -149,6 +149,8 @@ public class ConversationService {
         if (c.getProposition() != null) {
             r.setPropositionId(c.getProposition().getId());
             r.setNoviceId(c.getProposition().getNovice() != null ? c.getProposition().getNovice().getId() : null);
+            r.setNoviceNom(c.getProposition().getNovice() != null ? c.getProposition().getNovice().getNom() : null);
+            r.setNovicePrenom(c.getProposition().getNovice() != null ? c.getProposition().getNovice().getPrenom() : null);
             r.setProfessionnelId(c.getProposition().getProfessionnel() != null ? c.getProposition().getProfessionnel().getId() : null);
         }
         Message last = messageRepository.findTop1ByConversation_IdOrderByDateEnvoiDesc(c.getId());

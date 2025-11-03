@@ -217,6 +217,10 @@ public class ProfessionnelController {
         if (d.getDemande() != null && d.getDemande().getProjets() != null && !d.getDemande().getProjets().isEmpty()) {
             r.setProjetTitre(d.getDemande().getProjets().get(0).getTitre());
         }
+        if (d.getDemande() != null && d.getDemande().getNovice() != null) {
+            r.setNoviceNom(d.getDemande().getNovice().getNom());
+            r.setNovicePrenom(d.getDemande().getNovice().getPrenom());
+        }
         if (d.getSpecialite() != null) {
             r.setSpecialiteId(d.getSpecialite().getId());
         }
