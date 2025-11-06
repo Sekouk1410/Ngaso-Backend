@@ -37,4 +37,11 @@ public class NoviceController {
         Integer authUserId = Integer.parseInt(principal);
         return ResponseEntity.ok(projetService.refuserPropositionOwned(authUserId, propositionId));
     }
+
+    @GetMapping("/me/dashboard")
+    public ResponseEntity<com.ngaso.Ngaso.dto.DashboardNoviceResponse> getMyDashboard() {
+        String principal = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Integer authUserId = Integer.parseInt(principal);
+        return ResponseEntity.ok(projetService.getNoviceDashboard(authUserId));
+    }
 }

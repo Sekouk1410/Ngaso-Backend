@@ -178,9 +178,12 @@ public class ProjetService {
                 .orElseThrow(() -> new IllegalArgumentException("Projet introuvable: " + projetId));
         return p.getEtapes().stream()
                 .sorted((e1, e2) -> {
-                    Integer o1 = e1.getModele() != null ? e1.getModele().getOrdre() : Integer.MAX_VALUE;
-                    Integer o2 = e2.getModele() != null ? e2.getModele().getOrdre() : Integer.MAX_VALUE;
-                    return Integer.compare(o1 == null ? Integer.MAX_VALUE : o1, o2 == null ? Integer.MAX_VALUE : o2);
+                    Integer o1 = e1.getModele() != null ? e1.getModele().getOrdre() : null;
+                    Integer o2 = e2.getModele() != null ? e2.getModele().getOrdre() : null;
+                    if (o1 == null && o2 == null) return 0;
+                    if (o1 == null) return 1;
+                    if (o2 == null) return -1;
+                    return Integer.compare(o1, o2);
                 })
                 .map(e -> {
                     ModeleEtape m = e.getModele();
@@ -200,6 +203,65 @@ public class ProjetService {
                     );
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public com.ngaso.Ngaso.dto.DashboardNoviceResponse getNoviceDashboard(Integer authUserId) {
+        Novice novice = noviceRepo.findById(authUserId)
+                .orElseThrow(() -> new IllegalArgumentException("Novice introuvable: " + authUserId));
+
+        com.ngaso.Ngaso.dto.DashboardNoviceResponse resp = new com.ngaso.Ngaso.dto.DashboardNoviceResponse();
+        resp.setNom(novice.getNom());
+        resp.setPrenom(novice.getPrenom());
+        resp.setUnreadNotifications(notificationService.countUnread(authUserId));
+
+        org.springframework.data.domain.Pageable one = org.springframework.data.domain.PageRequest.of(0, 1,
+                org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "dateCréation"));
+        java.util.List<ProjetConstruction> last = projetRepo.findLastByNovice(authUserId, one);
+        if (!last.isEmpty()) {
+            ProjetConstruction p = last.get(0);
+            com.ngaso.Ngaso.dto.DashboardNoviceResponse.LastProjectInfo info = new com.ngaso.Ngaso.dto.DashboardNoviceResponse.LastProjectInfo();
+            info.setId(p.getIdProjet());
+            info.setTitre(p.getTitre());
+            int total = p.getEtapes() != null ? p.getEtapes().size() : 0;
+            int valides = p.getEtapes() != null ? (int) p.getEtapes().stream().filter(e -> Boolean.TRUE.equals(e.getEstValider())).count() : 0;
+            info.setTotalEtapes(total);
+            info.setEtapesValidees(valides);
+            int percent = total > 0 ? (int) Math.round((valides * 100.0) / total) : 0;
+            info.setProgressPercent(percent);
+
+            java.util.List<EtapeConstruction> steps = p.getEtapes() != null ? new java.util.ArrayList<>(p.getEtapes()) : java.util.Collections.emptyList();
+            steps.sort((a, b) -> {
+                Integer o1 = a.getModele() != null ? a.getModele().getOrdre() : null;
+                Integer o2 = b.getModele() != null ? b.getModele().getOrdre() : null;
+                if (o1 == null && o2 == null) return 0;
+                if (o1 == null) return 1;
+                if (o2 == null) return -1;
+                return Integer.compare(o1, o2);
+            });
+            int currentIdx = -1;
+            for (int i = 0; i < steps.size(); i++) {
+                if (!Boolean.TRUE.equals(steps.get(i).getEstValider())) { currentIdx = i; break; }
+            }
+            if (currentIdx == -1 && !steps.isEmpty()) {
+                currentIdx = steps.size() - 1;
+            }
+            String currentName = null;
+            String nextName = null;
+            if (currentIdx >= 0 && currentIdx < steps.size()) {
+                ModeleEtape m = steps.get(currentIdx).getModele();
+                currentName = m != null ? m.getNom() : null;
+                if (currentIdx + 1 < steps.size()) {
+                    ModeleEtape n = steps.get(currentIdx + 1).getModele();
+                    nextName = n != null ? n.getNom() : null;
+                }
+            }
+            info.setCurrentEtape(currentName);
+            info.setProchaineEtape(nextName);
+            resp.setLastProject(info);
+        }
+
+        return resp;
     }
 
     @Transactional(readOnly = true)
