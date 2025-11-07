@@ -21,4 +21,7 @@ public interface ProjetConstructionRepository extends JpaRepository<ProjetConstr
     List<ProjetConstruction> findByEtat(EtatProjet etat);
 
     Page<ProjetConstruction> findByEtat(EtatProjet etat, Pageable pageable);
+
+    @Query("SELECT p FROM ProjetConstruction p WHERE p.proprietaire.id = :noviceId ORDER BY p.dateCréation DESC")
+    List<ProjetConstruction> findLastByNovice(@Param("noviceId") Integer noviceId, Pageable pageable);
 }
