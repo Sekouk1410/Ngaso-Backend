@@ -277,9 +277,19 @@ public class ProjetService {
         d.setStatut(StatutDemande.EN_ATTENTE);
         d.setDateCréation(new Date());
         DemandeService saved = demandeRepo.save(d);
-        // Notify professional about new service request
-        notificationService.notify(pro, com.ngaso.Ngaso.Models.enums.TypeNotification.DemandeService,
-                "Nouvelle demande de service pour l'étape " + (m != null ? m.getNom() : String.valueOf(e.getIdEtape())));
+        // Notify professional about new service request (include novice name and message)
+        String noviceNom = p.getProprietaire() != null ? p.getProprietaire().getNom() : null;
+        String novicePrenom = p.getProprietaire() != null ? p.getProprietaire().getPrenom() : null;
+        String etapeLabel = (m != null ? m.getNom() : String.valueOf(e.getIdEtape()));
+        String base = "Nouvelle demande de service" +
+                (noviceNom != null || novicePrenom != null ? " de " +
+                        ((noviceNom != null ? noviceNom : "") +
+                        (novicePrenom != null ? (noviceNom != null ? " " : "") + novicePrenom : "")) : "") +
+                " pour l'étape " + etapeLabel;
+        String contenuNotif = req.getMessage() != null && !req.getMessage().isEmpty()
+                ? base + ". Message: " + req.getMessage()
+                : base;
+        notificationService.notify(pro, com.ngaso.Ngaso.Models.enums.TypeNotification.DemandeService, contenuNotif);
         return saved.getId();
     }
 

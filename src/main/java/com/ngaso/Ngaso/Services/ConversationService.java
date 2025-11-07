@@ -246,13 +246,19 @@ public class ConversationService {
         if (c == null || c.getProposition() == null || sender == null) return;
         var prop = c.getProposition();
         Utilisateur target = null;
+        boolean senderIsNovice = false;
         if (prop.getNovice() != null && Objects.equals(sender.getId(), prop.getNovice().getId())) {
             target = prop.getProfessionnel();
+            senderIsNovice = true;
         } else if (prop.getProfessionnel() != null && Objects.equals(sender.getId(), prop.getProfessionnel().getId())) {
             target = prop.getNovice();
         }
         if (target != null) {
-            notificationService.notify(target, com.ngaso.Ngaso.Models.enums.TypeNotification.Message, preview);
+            String nom = sender.getNom();
+            String prenom = sender.getPrenom();
+            String senderLabel = ((nom != null ? nom : "") + (prenom != null ? (nom != null ? " " : "") + prenom : "")).trim();
+            String contenu = senderIsNovice && !senderLabel.isEmpty() ? ("Nouveau message de " + senderLabel + ": " + preview) : preview;
+            notificationService.notify(target, com.ngaso.Ngaso.Models.enums.TypeNotification.Message, contenu);
         }
     }
 }

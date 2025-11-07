@@ -1,5 +1,6 @@
 package com.ngaso.Ngaso.Services;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -13,9 +14,10 @@ import java.util.UUID;
 @Service
 public class FileStorageService {
 
-    private final Path root = Paths.get("C:/ngaso/uploads").toAbsolutePath().normalize();
+    private final Path root;
 
-    public FileStorageService() throws IOException {
+    public FileStorageService(@Value("${app.upload.root}") String uploadRoot) throws IOException {
+        this.root = Paths.get(uploadRoot).toAbsolutePath().normalize();
         if (!Files.exists(root)) {
             Files.createDirectories(root);
         }
