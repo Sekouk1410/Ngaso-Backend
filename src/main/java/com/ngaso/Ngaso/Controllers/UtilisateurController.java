@@ -1,15 +1,14 @@
 package com.ngaso.Ngaso.Controllers;
 
 import com.ngaso.Ngaso.Services.UserProfileService;
+import com.ngaso.Ngaso.DAO.UtilisateurRepository;
+import com.ngaso.Ngaso.Models.entites.Utilisateur;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
@@ -17,9 +16,11 @@ import org.springframework.web.multipart.MultipartFile;
 public class UtilisateurController {
 
     private final UserProfileService userProfileService;
+    private final UtilisateurRepository utilisateurRepository;
 
-    public UtilisateurController(UserProfileService userProfileService) {
+    public UtilisateurController(UserProfileService userProfileService, UtilisateurRepository utilisateurRepository) {
         this.userProfileService = userProfileService;
+        this.utilisateurRepository = utilisateurRepository;
     }
 
     @PostMapping(value = "/me/photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -48,6 +49,28 @@ public class UtilisateurController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erreur lors de l'upload de l'image: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getMe() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Non authentifié");
+        }
+        try {
+            Integer userId = Integer.parseInt(authentication.getName());
+            Utilisateur u = utilisateurRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("Utilisateur introuvable"));
+            com.ngaso.Ngaso.dto.UserMeResponse dto = new com.ngaso.Ngaso.dto.UserMeResponse();
+            dto.setNom(u.getNom());
+            dto.setPrenom(u.getPrenom());
+            dto.setEmail(u.getEmail());
+            dto.setTelephone(u.getTelephone());
+            dto.setAdresse(u.getAdresse());
+            return ResponseEntity.ok(dto);
+        } catch (NumberFormatException e) {
+            return ResponseEntity.badRequest().body("ID utilisateur invalide");
         }
     }
 }
