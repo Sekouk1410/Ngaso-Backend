@@ -62,6 +62,13 @@ public class ProjetController {
         return ResponseEntity.ok(projetService.listByNovice(noviceId));
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<List<ProjetResponse>> listForMe() {
+        String principal = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Integer authUserId = Integer.parseInt(principal);
+        return ResponseEntity.ok(projetService.listByNovice(authUserId));
+    }
+
     @GetMapping("/en-cours")
     public ResponseEntity<com.ngaso.Ngaso.dto.PagedProjetResponse> listEnCours(
             @org.springframework.web.bind.annotation.RequestParam(defaultValue = "0") int page,

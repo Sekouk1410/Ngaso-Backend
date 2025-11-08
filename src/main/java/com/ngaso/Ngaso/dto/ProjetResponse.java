@@ -13,6 +13,7 @@ public class ProjetResponse {
     private Date dateCreation;
     private Integer totalEtapes;
     private Integer etapesValidees;
+    private String currentEtape;
 
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }
@@ -40,4 +41,7 @@ public class ProjetResponse {
 
     public Integer getEtapesValidees() { return etapesValidees; }
     public void setEtapesValidees(Integer etapesValidees) { this.etapesValidees = etapesValidees; }
+
+    public String getCurrentEtape() { return currentEtape; }
+    public void setCurrentEtape(String currentEtape) { this.currentEtape = currentEtape; }
 }

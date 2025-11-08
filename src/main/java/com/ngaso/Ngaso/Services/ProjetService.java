@@ -514,6 +514,28 @@ public class ProjetService {
             int valides = (int) p.getEtapes().stream().filter(e -> Boolean.TRUE.equals(e.getEstValider())).count();
             r.setTotalEtapes(total);
             r.setEtapesValidees(valides);
+            java.util.List<EtapeConstruction> steps = new java.util.ArrayList<>(p.getEtapes());
+            steps.sort((a, b) -> {
+                Integer o1 = a.getModele() != null ? a.getModele().getOrdre() : null;
+                Integer o2 = b.getModele() != null ? b.getModele().getOrdre() : null;
+                if (o1 == null && o2 == null) return 0;
+                if (o1 == null) return 1;
+                if (o2 == null) return -1;
+                return Integer.compare(o1, o2);
+            });
+            int currentIdx = -1;
+            for (int i = 0; i < steps.size(); i++) {
+                if (!Boolean.TRUE.equals(steps.get(i).getEstValider())) { currentIdx = i; break; }
+            }
+            if (currentIdx == -1 && !steps.isEmpty()) {
+                currentIdx = steps.size() - 1;
+            }
+            String currentName = null;
+            if (currentIdx >= 0 && currentIdx < steps.size()) {
+                ModeleEtape m = steps.get(currentIdx).getModele();
+                currentName = m != null ? m.getNom() : null;
+            }
+            r.setCurrentEtape(currentName);
         } else {
             r.setTotalEtapes(0);
             r.setEtapesValidees(0);
