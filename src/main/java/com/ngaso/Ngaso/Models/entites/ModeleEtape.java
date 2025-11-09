@@ -16,12 +16,17 @@ public class ModeleEtape {
     private Integer id;
 
     private String nom;
+    @Column(columnDefinition = "TEXT")
     private String description;
     private Integer ordre;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "specialite_id")
-    private Specialite specialite;
+    @ManyToMany
+    @JoinTable(
+            name = "modele_etape_specialites",
+            joinColumns = @JoinColumn(name = "modele_etape_id"),
+            inverseJoinColumns = @JoinColumn(name = "specialite_id")
+    )
+    private java.util.Set<Specialite> specialites = new java.util.HashSet<>();
 
     @OneToMany(mappedBy = "modele", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Illustration> illustrations = new ArrayList<>();
