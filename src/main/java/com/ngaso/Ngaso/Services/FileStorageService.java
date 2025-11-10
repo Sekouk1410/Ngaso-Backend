@@ -74,6 +74,38 @@ public class FileStorageService {
         return buildPublicUrl(target);
     }
 
+    public String storeAvatar(Integer userId, MultipartFile file) throws IOException {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Fichier image manquant");
+        }
+        Path dir = root.resolve(Paths.get("avatars"));
+        if (!Files.exists(dir)) {
+            Files.createDirectories(dir);
+        }
+        String ext = extractExtension(file.getOriginalFilename());
+        String filename = UUID.randomUUID().toString() + (ext.isBlank() ? "" : ("." + ext));
+        Path target = dir.resolve(filename);
+        Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+        return buildPublicUrl(target);
+    }
+
+    public String storeIllustration(Integer modeleId, MultipartFile file) throws IOException {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Image requise");
+        }
+        Path dir = (modeleId == null)
+                ? root.resolve(Paths.get("illustrations"))
+                : root.resolve(Paths.get("illustrations", String.valueOf(modeleId)));
+        if (!Files.exists(dir)) {
+            Files.createDirectories(dir);
+        }
+        String ext = extractExtension(file.getOriginalFilename());
+        String filename = UUID.randomUUID().toString() + (ext.isBlank() ? "" : ("." + ext));
+        Path target = dir.resolve(filename);
+        Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+        return buildPublicUrl(target);
+    }
+
     private String extractExtension(String name) {
         if (name == null) return "";
         int i = name.lastIndexOf('.');
@@ -98,3 +130,4 @@ public class FileStorageService {
         }
     }
 }
+
