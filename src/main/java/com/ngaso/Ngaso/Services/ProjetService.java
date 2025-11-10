@@ -283,19 +283,12 @@ public class ProjetService {
             throw new org.springframework.security.access.AccessDeniedException("Non autorisé: cette étape n'appartient pas à votre projet");
         }
         ModeleEtape m = e.getModele();
-        if (m == null || m.getSpecialites() == null || m.getSpecialites().isEmpty()) {
+        if (m == null || m.getSpecialite() == null || m.getSpecialite().getId() == null) {
             return java.util.Collections.emptyList();
         }
-        java.util.Set<Integer> specIds = m.getSpecialites().stream()
-                .map(com.ngaso.Ngaso.Models.entites.Specialite::getId)
-                .filter(java.util.Objects::nonNull)
-                .collect(java.util.stream.Collectors.toSet());
-        java.util.Map<Integer, Professionnel> unique = new java.util.HashMap<>();
-        for (Integer sid : specIds) {
-            professionnelRepo.findBySpecialite_IdAndEstValiderTrue(sid)
-                    .forEach(pro -> unique.putIfAbsent(pro.getId(), pro));
-        }
-        return unique.values().stream()
+        Integer specialiteId = m.getSpecialite().getId();
+        return professionnelRepo.findBySpecialite_IdAndEstValiderTrue(specialiteId)
+                .stream()
                 .map(pro -> new ProfessionnelBriefResponse(
                         pro.getId(),
                         pro.getNom(),
@@ -319,7 +312,7 @@ public class ProjetService {
             throw new org.springframework.security.access.AccessDeniedException("Non autorisé: cette étape n'appartient pas à votre projet");
         }
         ModeleEtape m = e.getModele();
-        if (m == null || m.getSpecialites() == null || m.getSpecialites().isEmpty()) {
+        if (m == null || m.getSpecialite() == null || m.getSpecialite().getId() == null) {
             throw new IllegalStateException("Cette étape n'a pas de spécialité assignée");
         }
         Professionnel pro = professionnelRepo.findById(req.getProfessionnelId())
@@ -327,12 +320,9 @@ public class ProjetService {
         if (Boolean.FALSE.equals(pro.getEstValider())) {
             throw new org.springframework.security.access.AccessDeniedException("Professionnel non validé");
         }
+        Integer etapeSpecId = m.getSpecialite().getId();
         Integer proSpecId = pro.getSpecialite() != null ? pro.getSpecialite().getId() : null;
-        boolean match = proSpecId != null && m.getSpecialites().stream()
-                .map(com.ngaso.Ngaso.Models.entites.Specialite::getId)
-                .filter(java.util.Objects::nonNull)
-                .anyMatch(id -> id.equals(proSpecId));
-        if (!match) {
+        if (proSpecId == null || !proSpecId.equals(etapeSpecId)) {
             throw new IllegalArgumentException("La spécialité du professionnel ne correspond pas à celle de l'étape");
         }
         // Empêcher les doublons EN_ATTENTE pour la même étape, même pro et même novice

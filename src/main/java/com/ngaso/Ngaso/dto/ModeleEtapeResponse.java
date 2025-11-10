@@ -14,6 +14,6 @@ public class ModeleEtapeResponse {
     private String nom;
     private String description;
     private Integer ordre;
-    private java.util.List<Integer> specialiteIds;
-    private java.util.List<String> specialiteLibelles;
+    private Integer specialiteId;
+    private String specialiteLibelle;
 }

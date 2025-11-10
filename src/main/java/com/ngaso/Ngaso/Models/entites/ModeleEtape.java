@@ -20,17 +20,11 @@ public class ModeleEtape {
     private String description;
     private Integer ordre;
 
-    @ManyToMany
-    @JoinTable(
-            name = "modele_etape_specialites",
-            joinColumns = @JoinColumn(name = "modele_etape_id"),
-            inverseJoinColumns = @JoinColumn(name = "specialite_id")
-    )
-    private java.util.Set<Specialite> specialites = new java.util.HashSet<>();
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "specialite_id")
+    private Specialite specialite;
 
     @OneToMany(mappedBy = "modele", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Illustration> illustrations = new ArrayList<>();
 
-    @OneToMany(mappedBy = "modele", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<EtapeConstruction> etapes = new ArrayList<>();
 }
