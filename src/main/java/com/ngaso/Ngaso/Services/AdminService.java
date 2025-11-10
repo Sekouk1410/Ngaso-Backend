@@ -21,9 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import java.nio.file.Path;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 
 @Service
 @Transactional
@@ -34,17 +31,20 @@ public class AdminService {
     private final ModeleEtapeRepository modeleEtapeRepository;
     private final IllustrationRepository illustrationRepository;
     private final SpecialiteRepository specialiteRepository;
+    private final FileStorageService storageService;
 
     public AdminService(ProfessionnelRepository professionnelRepository,
                         UtilisateurRepository utilisateurRepository,
                         ModeleEtapeRepository modeleEtapeRepository,
                         IllustrationRepository illustrationRepository,
-                        SpecialiteRepository specialiteRepository) {
+                        SpecialiteRepository specialiteRepository,
+                        FileStorageService storageService) {
         this.professionnelRepository = professionnelRepository;
         this.utilisateurRepository = utilisateurRepository;
         this.modeleEtapeRepository = modeleEtapeRepository;
         this.illustrationRepository = illustrationRepository;
         this.specialiteRepository = specialiteRepository;
+        this.storageService = storageService;
     }
 
     @Transactional(readOnly = true)
@@ -149,20 +149,11 @@ public class AdminService {
             throw new IllegalArgumentException("Image requise");
         }
         try {
-            String baseDir = System.getProperty("user.dir");
-            Path uploadDir = Path.of(baseDir, "uploads", "illustrations");
-            Files.createDirectories(uploadDir);
-            String original = image.getOriginalFilename();
-            String filename = java.util.UUID.randomUUID() + (original != null ? ("_" + original.replaceAll("[^a-zA-Z0-9._-]", "_")) : "");
-            Path target = uploadDir.resolve(filename);
-            try (java.io.InputStream in = image.getInputStream()) {
-                Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
-            }
-
+            String publicUrl = storageService.storeIllustration(modeleId, image);
             Illustration ill = new Illustration();
             ill.setTitre(req.getTitre());
             ill.setDescription(req.getDescription());
-            ill.setUrlImage(target.toString().replace('\\', '/'));
+            ill.setUrlImage(publicUrl);
             ill.setModele(modele);
             Illustration saved = illustrationRepository.save(ill);
             return new IllustrationResponse(saved.getId(), saved.getTitre(), saved.getDescription(), saved.getUrlImage(), modele.getId());
