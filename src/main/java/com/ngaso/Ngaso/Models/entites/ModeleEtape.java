@@ -16,6 +16,7 @@ public class ModeleEtape {
     private Integer id;
 
     private String nom;
+    @Column(columnDefinition = "TEXT")
     private String description;
     private Integer ordre;
 
@@ -26,6 +27,4 @@ public class ModeleEtape {
     @OneToMany(mappedBy = "modele", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Illustration> illustrations = new ArrayList<>();
 
-    @OneToMany(mappedBy = "modele", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<EtapeConstruction> etapes = new ArrayList<>();
 }
