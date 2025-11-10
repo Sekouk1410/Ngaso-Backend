@@ -7,4 +7,5 @@ import java.util.List;
 public interface ProfessionnelRepository extends JpaRepository<Professionnel, Integer> {
     List<Professionnel> findByEstValider(Boolean estValider);
     List<Professionnel> findBySpecialite_IdAndEstValiderTrue(Integer specialiteId);
+    List<Professionnel> findBySpecialite_IdInAndEstValiderTrue(List<Integer> specialiteIds);
 }
