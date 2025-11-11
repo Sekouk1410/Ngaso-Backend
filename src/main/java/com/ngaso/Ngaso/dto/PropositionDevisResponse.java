@@ -3,7 +3,7 @@ package com.ngaso.Ngaso.dto;
 import com.ngaso.Ngaso.Models.enums.StatutDevis;
 import java.util.Date;
 
-public class d PropositionDevisResponse {
+public class PropositionDevisResponse {
     private Integer id;
     private Double montant;
     private String description;
