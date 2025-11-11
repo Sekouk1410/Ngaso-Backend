@@ -9,6 +9,7 @@ import com.ngaso.Ngaso.Models.entites.PropositionDevis;
 import com.ngaso.Ngaso.Models.entites.Utilisateur;
 import com.ngaso.Ngaso.dto.ConversationItemResponse;
 import com.ngaso.Ngaso.dto.MessageResponse;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -23,17 +24,20 @@ public class ConversationService {
     private final UtilisateurRepository utilisateurRepository;
     private final FileStorageService fileStorageService;
     private final NotificationService notificationService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public ConversationService(ConversationRepository conversationRepository,
                                MessageRepository messageRepository,
                                UtilisateurRepository utilisateurRepository,
                                FileStorageService fileStorageService,
-                               NotificationService notificationService) {
+                               NotificationService notificationService,
+                               SimpMessagingTemplate messagingTemplate) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
         this.utilisateurRepository = utilisateurRepository;
         this.fileStorageService = fileStorageService;
         this.notificationService = notificationService;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @Transactional
@@ -85,9 +89,12 @@ public class ConversationService {
         m.setDateEnvoi(new java.util.Date());
         m.setEstLu(Boolean.FALSE);
         Message saved = messageRepository.save(m);
+        MessageResponse payload = mapMessage(saved);
+        // Real-time publish to topic for this conversation
+        safePublishToTopic(c.getId(), payload);
         // Notify the other participant
         notifyOtherParticipant(c, sender, content != null ? content : "Pièce jointe envoyée");
-        return mapMessage(saved);
+        return payload;
     }
 
     @Transactional
@@ -113,9 +120,12 @@ public class ConversationService {
         m.setDateEnvoi(new java.util.Date());
         m.setEstLu(Boolean.FALSE);
         Message saved = messageRepository.save(m);
+        MessageResponse payload = mapMessage(saved);
+        // Real-time publish to topic for this conversation
+        safePublishToTopic(c.getId(), payload);
         // Notify the other participant
         notifyOtherParticipant(c, sender, content != null ? content : "Pièce jointe envoyée");
-        return mapMessage(saved);
+        return payload;
     }
 
     private Utilisateur resolveSenderFromConversation(Integer authUserId, Conversation c) {
@@ -260,5 +270,12 @@ public class ConversationService {
             String contenu = senderIsNovice && !senderLabel.isEmpty() ? ("Nouveau message de " + senderLabel + ": " + preview) : preview;
             notificationService.notify(target, com.ngaso.Ngaso.Models.enums.TypeNotification.Message, contenu);
         }
+    }
+
+    private void safePublishToTopic(Integer conversationId, MessageResponse payload) {
+        if (conversationId == null || payload == null) return;
+        try {
+            messagingTemplate.convertAndSend("/topic/conversations/" + conversationId, payload);
+        } catch (Exception ignored) {}
     }
 }
