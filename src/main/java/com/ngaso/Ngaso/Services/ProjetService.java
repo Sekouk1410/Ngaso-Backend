@@ -26,6 +26,7 @@ import com.ngaso.Ngaso.dto.ProjetResponse;
 import com.ngaso.Ngaso.dto.EtapeWithIllustrationsResponse;
 import com.ngaso.Ngaso.dto.IllustrationResponse;
 import com.ngaso.Ngaso.dto.ProjetUpdateRequest;
+import com.ngaso.Ngaso.dto.ProfessionnelProfilResponse;
 import com.ngaso.Ngaso.dto.ProfessionnelBriefResponse;
 import com.ngaso.Ngaso.dto.DemandeCreateRequest;
 import com.ngaso.Ngaso.dto.DemandeBriefResponse;
@@ -573,18 +574,21 @@ public class ProjetService {
         }
         if (d.getProfessionnel() != null) {
             var pro = d.getProfessionnel();
-            com.ngaso.Ngaso.dto.ProfessionnelBriefResponse pb = new com.ngaso.Ngaso.dto.ProfessionnelBriefResponse(
-                    pro.getId(),
-                    pro.getNom(),
-                    pro.getPrenom(),
-                    pro.getTelephone(),
-                    pro.getEmail(),
-                    pro.getEntreprise(),
-                    pro.getSpecialite() != null ? pro.getSpecialite().getId() : null,
-                    pro.getSpecialite() != null ? pro.getSpecialite().getLibelle() : null,
-                    pro.getRealisations()
-            );
-            r.setProfessionnel(pb);
+            ProfessionnelProfilResponse pp = new ProfessionnelProfilResponse();
+            pp.setId(pro.getId());
+            pp.setNom(pro.getNom());
+            pp.setPrenom(pro.getPrenom());
+            pp.setTelephone(pro.getTelephone());
+            pp.setEmail(pro.getEmail());
+            pp.setAdresse(pro.getAdresse());
+            pp.setEntreprise(pro.getEntreprise());
+            pp.setDescription(pro.getDescription());
+            if (pro.getSpecialite() != null) {
+                pp.setSpecialiteId(pro.getSpecialite().getId());
+                pp.setSpecialiteLibelle(pro.getSpecialite().getLibelle());
+            }
+            pp.setRealisations(pro.getRealisations());
+            r.setProfessionnel(pp);
         }
         return r;
     }

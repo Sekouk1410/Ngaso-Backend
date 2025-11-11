@@ -14,11 +14,15 @@ import com.ngaso.Ngaso.Models.enums.StatutDemande;
 import com.ngaso.Ngaso.dto.RealisationItemResponse;
 import com.ngaso.Ngaso.Models.entites.PropositionDevis;
 import com.ngaso.Ngaso.Models.enums.StatutDevis;
+import com.ngaso.Ngaso.DAO.ProfessionnelRepository;
+import com.ngaso.Ngaso.Models.entites.Professionnel;
+import com.ngaso.Ngaso.dto.ProfessionnelProfilResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.MediaType;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/professionnels")
@@ -28,15 +32,18 @@ public class ProfessionnelController {
     private final ProfessionnelRealisationService realisationService;
     private final ProfessionnelPropositionService propositionService;
     private final ProfessionnelDemandeWorkflowService demandeWorkflowService;
+    private final ProfessionnelRepository professionnelRepository;
 
     public ProfessionnelController(ProfessionnelDashboardService dashboardService,
                                    ProfessionnelRealisationService realisationService,
                                    ProfessionnelPropositionService propositionService,
-                                   ProfessionnelDemandeWorkflowService demandeWorkflowService) {
+                                   ProfessionnelDemandeWorkflowService demandeWorkflowService,
+                                   ProfessionnelRepository professionnelRepository) {
         this.dashboardService = dashboardService;
         this.realisationService = realisationService;
         this.propositionService = propositionService;
         this.demandeWorkflowService = demandeWorkflowService;
+        this.professionnelRepository = professionnelRepository;
     }
 
     @GetMapping("/{id}/dashboard")
@@ -206,6 +213,31 @@ public class ProfessionnelController {
         return ResponseEntity.ok(resp);
     }
 
+    @GetMapping("/{id}/profil")
+    @PreAuthorize("hasRole('Novice')")
+    public ResponseEntity<ProfessionnelProfilResponse> getProfil(@PathVariable("id") Integer id) {
+        Professionnel p = professionnelRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Professionnel introuvable"));
+        if (Boolean.FALSE.equals(p.getEstValider())) {
+            throw new org.springframework.security.access.AccessDeniedException("Compte professionnel non validé");
+        }
+        ProfessionnelProfilResponse r = new ProfessionnelProfilResponse();
+        r.setId(p.getId());
+        r.setNom(p.getNom());
+        r.setPrenom(p.getPrenom());
+        r.setTelephone(p.getTelephone());
+        r.setEmail(p.getEmail());
+        r.setAdresse(p.getAdresse());
+        r.setEntreprise(p.getEntreprise());
+        r.setDescription(p.getDescription());
+        if (p.getSpecialite() != null) {
+            r.setSpecialiteId(p.getSpecialite().getId());
+            r.setSpecialiteLibelle(p.getSpecialite().getLibelle());
+        }
+        r.setRealisations(realisationService.list(id));
+        return ResponseEntity.ok(r);
+    }
+
     private PropositionDevisResponse map(PropositionDevis d) {
         PropositionDevisResponse r = new PropositionDevisResponse();
         r.setId(d.getId());
@@ -226,18 +258,21 @@ public class ProfessionnelController {
         }
         if (d.getProfessionnel() != null) {
             var pro = d.getProfessionnel();
-            com.ngaso.Ngaso.dto.ProfessionnelBriefResponse pb = new com.ngaso.Ngaso.dto.ProfessionnelBriefResponse(
-                    pro.getId(),
-                    pro.getNom(),
-                    pro.getPrenom(),
-                    pro.getTelephone(),
-                    pro.getEmail(),
-                    pro.getEntreprise(),
-                    pro.getSpecialite() != null ? pro.getSpecialite().getId() : null,
-                    pro.getSpecialite() != null ? pro.getSpecialite().getLibelle() : null,
-                    pro.getRealisations()
-            );
-            r.setProfessionnel(pb);
+            ProfessionnelProfilResponse pp = new ProfessionnelProfilResponse();
+            pp.setId(pro.getId());
+            pp.setNom(pro.getNom());
+            pp.setPrenom(pro.getPrenom());
+            pp.setTelephone(pro.getTelephone());
+            pp.setEmail(pro.getEmail());
+            pp.setAdresse(pro.getAdresse());
+            pp.setEntreprise(pro.getEntreprise());
+            pp.setDescription(pro.getDescription());
+            if (pro.getSpecialite() != null) {
+                pp.setSpecialiteId(pro.getSpecialite().getId());
+                pp.setSpecialiteLibelle(pro.getSpecialite().getLibelle());
+            }
+            pp.setRealisations(realisationService.list(pro.getId()));
+            r.setProfessionnel(pp);
         }
         return r;
     }
