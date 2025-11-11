@@ -20,10 +20,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
-import java.nio.file.Path;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 
 @Service
 @Transactional
@@ -34,17 +32,20 @@ public class AdminService {
     private final ModeleEtapeRepository modeleEtapeRepository;
     private final IllustrationRepository illustrationRepository;
     private final SpecialiteRepository specialiteRepository;
+    private final FileStorageService storageService;
 
     public AdminService(ProfessionnelRepository professionnelRepository,
                         UtilisateurRepository utilisateurRepository,
                         ModeleEtapeRepository modeleEtapeRepository,
                         IllustrationRepository illustrationRepository,
-                        SpecialiteRepository specialiteRepository) {
+                        SpecialiteRepository specialiteRepository,
+                        FileStorageService storageService) {
         this.professionnelRepository = professionnelRepository;
         this.utilisateurRepository = utilisateurRepository;
         this.modeleEtapeRepository = modeleEtapeRepository;
         this.illustrationRepository = illustrationRepository;
         this.specialiteRepository = specialiteRepository;
+        this.storageService = storageService;
     }
 
     @Transactional(readOnly = true)
@@ -130,16 +131,22 @@ public class AdminService {
         if (req.getNom() == null || req.getNom().isBlank()) {
             throw new IllegalArgumentException("Le nom du modèle est requis");
         }
-        Specialite spec = specialiteRepository.findById(req.getSpecialiteId())
-                .orElseThrow(() -> new IllegalArgumentException("Spécialité introuvable"));
+        if (req.getSpecialiteIds() == null || req.getSpecialiteIds().isEmpty()) {
+            throw new IllegalArgumentException("Au moins une spécialité est requise");
+        }
+        List<Specialite> specs = specialiteRepository.findAllById(req.getSpecialiteIds());
+        if (specs.isEmpty()) {
+            throw new IllegalArgumentException("Spécialité(s) introuvable(s)");
+        }
         ModeleEtape m = new ModeleEtape();
         m.setNom(req.getNom());
         m.setDescription(req.getDescription());
         m.setOrdre(req.getOrdre());
-        m.setSpecialite(spec);
+        m.setSpecialites(new java.util.HashSet<>(specs));
         ModeleEtape saved = modeleEtapeRepository.save(m);
-        return new ModeleEtapeResponse(saved.getId(), saved.getNom(), saved.getDescription(), saved.getOrdre(),
-                spec.getId(), spec.getLibelle());
+        List<Integer> ids = saved.getSpecialites().stream().map(Specialite::getId).collect(Collectors.toList());
+        List<String> labels = saved.getSpecialites().stream().map(Specialite::getLibelle).collect(Collectors.toList());
+        return new ModeleEtapeResponse(saved.getId(), saved.getNom(), saved.getDescription(), saved.getOrdre(), ids, labels);
     }
 
     public IllustrationResponse addIllustrationToModele(Integer modeleId, IllustrationCreateRequest req, org.springframework.web.multipart.MultipartFile image) {
@@ -149,20 +156,11 @@ public class AdminService {
             throw new IllegalArgumentException("Image requise");
         }
         try {
-            String baseDir = System.getProperty("user.dir");
-            Path uploadDir = Path.of(baseDir, "uploads", "illustrations");
-            Files.createDirectories(uploadDir);
-            String original = image.getOriginalFilename();
-            String filename = java.util.UUID.randomUUID() + (original != null ? ("_" + original.replaceAll("[^a-zA-Z0-9._-]", "_")) : "");
-            Path target = uploadDir.resolve(filename);
-            try (java.io.InputStream in = image.getInputStream()) {
-                Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
-            }
-
+            String publicUrl = storageService.storeIllustration(modeleId, image);
             Illustration ill = new Illustration();
             ill.setTitre(req.getTitre());
             ill.setDescription(req.getDescription());
-            ill.setUrlImage(target.toString().replace('\\', '/'));
+            ill.setUrlImage(publicUrl);
             ill.setModele(modele);
             Illustration saved = illustrationRepository.save(ill);
             return new IllustrationResponse(saved.getId(), saved.getTitre(), saved.getDescription(), saved.getUrlImage(), modele.getId());

@@ -7,20 +7,16 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.UUID;
 
 @Service
 public class UserProfileService {
 
     private final UtilisateurRepository utilisateurRepository;
+    private final FileStorageService storageService;
 
-    public UserProfileService(UtilisateurRepository utilisateurRepository) {
+    public UserProfileService(UtilisateurRepository utilisateurRepository, FileStorageService storageService) {
         this.utilisateurRepository = utilisateurRepository;
+        this.storageService = storageService;
     }
 
     @Transactional
@@ -34,19 +30,7 @@ public class UserProfileService {
 
         try {
             System.out.println("[UserProfileService] Upload démarré - userId=" + userId + ", originalName=" + file.getOriginalFilename() + ", size=" + file.getSize());
-            Path baseDir = Paths.get("C:/ngaso/uploads", "avatars");
-            Files.createDirectories(baseDir);
-
-            String original = file.getOriginalFilename() == null ? "image" : file.getOriginalFilename();
-            String onlyName = Paths.get(original).getFileName().toString();
-            String safeName = UUID.randomUUID() + "-" + onlyName;
-            Path target = baseDir.resolve(safeName);
-
-            try (InputStream in = file.getInputStream()) {
-                Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
-            }
-
-            String publicUrl = "/uploads/avatars/" + safeName;
+            String publicUrl = storageService.storeAvatar(userId, file);
             user.setPhotoProfil(publicUrl);
             utilisateurRepository.save(user);
             System.out.println("[UserProfileService] Upload réussi - url=" + publicUrl);

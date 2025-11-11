@@ -35,6 +35,7 @@ public class SecurityConfig {
                 .requestMatchers("/auth/register/novice").permitAll()
                 .requestMatchers("/auth/register/professionnel").permitAll()
                 .requestMatchers("/auth/**").permitAll()
+                .requestMatchers("/health/**").permitAll()
                 // Password change (Novice & Professionnel uniquement)
                 .requestMatchers("/auth/change-password").hasAnyRole("Novice", "Professionnel")
                 // Swagger/OpenAPI docs
