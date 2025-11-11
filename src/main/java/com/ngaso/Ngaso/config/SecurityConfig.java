@@ -16,9 +16,11 @@ import java.util.List;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import com.ngaso.Ngaso.security.JwtAuthenticationFilter;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     @Bean
@@ -44,7 +46,10 @@ public class SecurityConfig {
                 // Admin scope
                 .requestMatchers("/admin/**").hasRole("Admin")
                 // Professionnel scope
-                .requestMatchers("/professionnels/**").hasRole("Professionnel")
+                    // Allow novices to view professional profiles via GET profil endpoint
+                    .requestMatchers(org.springframework.http.HttpMethod.GET, "/professionnels/*/profil").hasRole("Novice")
+
+                    .requestMatchers("/professionnels/**").hasRole("Professionnel")
                 // Projets en cours visible uniquement par les professionnels
                 .requestMatchers("/projets/en-cours").hasRole("Professionnel")
                 // Novice scope
