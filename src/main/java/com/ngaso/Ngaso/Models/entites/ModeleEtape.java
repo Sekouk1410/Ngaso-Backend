@@ -6,8 +6,6 @@ import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.HashSet;
-import java.util.Set;
 
 @Getter
 @Setter
@@ -22,13 +20,9 @@ public class ModeleEtape {
     private String description;
     private Integer ordre;
 
-    @ManyToMany
-    @JoinTable(
-            name = "modele_etape_specialites",
-            joinColumns = @JoinColumn(name = "modele_etape_id"),
-            inverseJoinColumns = @JoinColumn(name = "specialite_id")
-    )
-    private Set<Specialite> specialites = new HashSet<>();
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "specialite_id")
+    private Specialite specialite;
 
     @OneToMany(mappedBy = "modele", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Illustration> illustrations = new ArrayList<>();

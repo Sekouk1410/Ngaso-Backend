@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import java.util.List;
 
 @Getter
 @Setter
@@ -15,6 +14,6 @@ public class ModeleEtapeResponse {
     private String nom;
     private String description;
     private Integer ordre;
-    private List<Integer> specialiteIds;
-    private List<String> specialiteLibelles;
+    private Integer specialiteId;
+    private String specialiteLibelle;
 }

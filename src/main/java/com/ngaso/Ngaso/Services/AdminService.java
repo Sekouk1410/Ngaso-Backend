@@ -20,7 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -131,22 +130,16 @@ public class AdminService {
         if (req.getNom() == null || req.getNom().isBlank()) {
             throw new IllegalArgumentException("Le nom du modèle est requis");
         }
-        if (req.getSpecialiteIds() == null || req.getSpecialiteIds().isEmpty()) {
-            throw new IllegalArgumentException("Au moins une spécialité est requise");
-        }
-        List<Specialite> specs = specialiteRepository.findAllById(req.getSpecialiteIds());
-        if (specs.isEmpty()) {
-            throw new IllegalArgumentException("Spécialité(s) introuvable(s)");
-        }
+        Specialite spec = specialiteRepository.findById(req.getSpecialiteId())
+                .orElseThrow(() -> new IllegalArgumentException("Spécialité introuvable"));
         ModeleEtape m = new ModeleEtape();
         m.setNom(req.getNom());
         m.setDescription(req.getDescription());
         m.setOrdre(req.getOrdre());
-        m.setSpecialites(new java.util.HashSet<>(specs));
+        m.setSpecialite(spec);
         ModeleEtape saved = modeleEtapeRepository.save(m);
-        List<Integer> ids = saved.getSpecialites().stream().map(Specialite::getId).collect(Collectors.toList());
-        List<String> labels = saved.getSpecialites().stream().map(Specialite::getLibelle).collect(Collectors.toList());
-        return new ModeleEtapeResponse(saved.getId(), saved.getNom(), saved.getDescription(), saved.getOrdre(), ids, labels);
+        return new ModeleEtapeResponse(saved.getId(), saved.getNom(), saved.getDescription(), saved.getOrdre(),
+                spec.getId(), spec.getLibelle());
     }
 
     public IllustrationResponse addIllustrationToModele(Integer modeleId, IllustrationCreateRequest req, org.springframework.web.multipart.MultipartFile image) {
