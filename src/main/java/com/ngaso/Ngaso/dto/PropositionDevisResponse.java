@@ -10,7 +10,7 @@ public class PropositionDevisResponse {
     private Integer specialiteId;
     private String fichierDevis;
     private StatutDevis statut;
-    private ProfessionnelProfilResponse professionnel;
+    private ProfessionnelBriefResponse professionnel;
     private String projetTitre;
     private Date dateProposition;
     private String noviceNom;
@@ -34,8 +34,8 @@ public class PropositionDevisResponse {
     public StatutDevis getStatut() { return statut; }
     public void setStatut(StatutDevis statut) { this.statut = statut; }
 
-    public ProfessionnelProfilResponse getProfessionnel() { return professionnel; }
-    public void setProfessionnel(ProfessionnelProfilResponse professionnel) { this.professionnel = professionnel; }
+    public ProfessionnelBriefResponse getProfessionnel() { return professionnel; }
+    public void setProfessionnel(ProfessionnelBriefResponse professionnel) { this.professionnel = professionnel; }
 
     public String getProjetTitre() { return projetTitre; }
     public void setProjetTitre(String projetTitre) { this.projetTitre = projetTitre; }
