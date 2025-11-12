@@ -162,6 +162,8 @@ public class ConversationService {
             r.setNoviceNom(c.getProposition().getNovice() != null ? c.getProposition().getNovice().getNom() : null);
             r.setNovicePrenom(c.getProposition().getNovice() != null ? c.getProposition().getNovice().getPrenom() : null);
             r.setProfessionnelId(c.getProposition().getProfessionnel() != null ? c.getProposition().getProfessionnel().getId() : null);
+            r.setProfessionnelNom(c.getProposition().getProfessionnel() != null ? c.getProposition().getProfessionnel().getNom() : null);
+            r.setProfessionnelPrenom(c.getProposition().getProfessionnel() != null ? c.getProposition().getProfessionnel().getPrenom() : null);
         }
         Message last = messageRepository.findTop1ByConversation_IdOrderByDateEnvoiDesc(c.getId());
         if (last != null) {
