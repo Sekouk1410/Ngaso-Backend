@@ -9,6 +9,8 @@ public class ConversationItemResponse {
     private Integer professionnelId;
     private String noviceNom;
     private String novicePrenom;
+    private String professionnelNom;
+    private String professionnelPrenom;
     private String lastMessage;
     private Date lastMessageAt;
     private Boolean active;
@@ -30,6 +32,12 @@ public class ConversationItemResponse {
 
     public String getNovicePrenom() { return novicePrenom; }
     public void setNovicePrenom(String novicePrenom) { this.novicePrenom = novicePrenom; }
+
+    public String getProfessionnelNom() { return professionnelNom; }
+    public void setProfessionnelNom(String professionnelNom) { this.professionnelNom = professionnelNom; }
+
+    public String getProfessionnelPrenom() { return professionnelPrenom; }
+    public void setProfessionnelPrenom(String professionnelPrenom) { this.professionnelPrenom = professionnelPrenom; }
 
     public String getLastMessage() { return lastMessage; }
     public void setLastMessage(String lastMessage) { this.lastMessage = lastMessage; }
