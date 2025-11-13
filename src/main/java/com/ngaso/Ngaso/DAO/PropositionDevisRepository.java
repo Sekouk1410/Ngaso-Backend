@@ -20,4 +20,6 @@ public interface PropositionDevisRepository extends JpaRepository<PropositionDev
     long countByProfessionnel_IdAndDemande_Id(Integer professionnelId, Integer demandeId);
 
     Optional<PropositionDevis> findTopByProfessionnel_IdAndDemande_IdOrderByIdDesc(Integer professionnelId, Integer demandeId);
+
+    long countByNovice_IdAndStatut(Integer noviceId, StatutDevis statut);
 }

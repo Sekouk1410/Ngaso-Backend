@@ -34,6 +34,20 @@ public class ConversationController {
         return ResponseEntity.ok(conversationService.listMyConversations(authUserId, isNovice));
     }
 
+    @GetMapping("/me/unread/total")
+    public ResponseEntity<java.util.Map<String, Long>> unreadTotal() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String principal = (String) auth.getPrincipal();
+        Integer authUserId = Integer.parseInt(principal);
+        boolean isNovice = hasRole(auth, "ROLE_Novice");
+        boolean isPro = hasRole(auth, "ROLE_Professionnel");
+        if (!isNovice && !isPro) {
+            throw new org.springframework.security.access.AccessDeniedException("Rôle requis");
+        }
+        long total = conversationService.unreadTotal(authUserId, isNovice);
+        return ResponseEntity.ok(java.util.Map.of("total", total));
+    }
+
     @GetMapping("/{conversationId}/messages")
     public ResponseEntity<List<MessageResponse>> listMessages(@PathVariable Integer conversationId,
                                                               @RequestParam(defaultValue = "0") int page,

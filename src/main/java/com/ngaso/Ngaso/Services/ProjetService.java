@@ -441,6 +441,11 @@ public class ProjetService {
         return list.stream().map(this::map).collect(java.util.stream.Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public long countPropositionsOwnedPending(Integer authUserId) {
+        return propositionRepo.countByNovice_IdAndStatut(authUserId, StatutDevis.EN_ATTENTE);
+    }
+
     @Transactional
     public PropositionDevisResponse accepterPropositionOwned(Integer authUserId, Integer propositionId) {
         PropositionDevis p = propositionRepo.findById(propositionId)

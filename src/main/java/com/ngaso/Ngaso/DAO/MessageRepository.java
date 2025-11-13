@@ -23,4 +23,6 @@ public interface MessageRepository extends JpaRepository<Message, Integer> {
     List<Message> findByIdInAndConversation_Id(List<Integer> ids, Integer conversationId);
 
     List<Message> findByConversation_IdAndEstLuFalseAndExpediteur_IdNot(Integer conversationId, Integer expediteurId);
+
+    long countByConversation_IdAndEstLuFalseAndExpediteur_IdNot(Integer conversationId, Integer expediteurId);
 }

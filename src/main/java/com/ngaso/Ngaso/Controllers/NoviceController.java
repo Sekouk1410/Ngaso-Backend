@@ -24,6 +24,14 @@ public class NoviceController {
         return ResponseEntity.ok(projetService.listPropositionsOwned(authUserId, statut));
     }
 
+    @GetMapping("/me/propositions/unanswered/count")
+    public ResponseEntity<java.util.Map<String, Long>> countMyUnansweredPropositions() {
+        String principal = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Integer authUserId = Integer.parseInt(principal);
+        long total = projetService.countPropositionsOwnedPending(authUserId);
+        return ResponseEntity.ok(java.util.Map.of("total", total));
+    }
+
     @PostMapping("/me/propositions/{propositionId}/accepter")
     public ResponseEntity<PropositionDevisResponse> accepterProposition(@PathVariable Integer propositionId) {
         String principal = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
