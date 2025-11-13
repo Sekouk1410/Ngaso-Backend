@@ -60,7 +60,19 @@ public class ConversationService {
         java.util.List<Conversation> list = asNovice
                 ? conversationRepository.findByProposition_Novice_Id(authUserId)
                 : conversationRepository.findByProposition_Professionnel_Id(authUserId);
-        return list.stream().map(this::mapItem).toList();
+        return list.stream().map(c -> mapItemWithUnread(c, authUserId)).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public long unreadTotal(Integer authUserId, boolean asNovice) {
+        java.util.List<Conversation> list = asNovice
+                ? conversationRepository.findByProposition_Novice_Id(authUserId)
+                : conversationRepository.findByProposition_Professionnel_Id(authUserId);
+        long total = 0L;
+        for (Conversation c : list) {
+            total += messageRepository.countByConversation_IdAndEstLuFalseAndExpediteur_IdNot(c.getId(), authUserId);
+        }
+        return total;
     }
 
     @Transactional(readOnly = true)
@@ -170,6 +182,14 @@ public class ConversationService {
             r.setLastMessage(last.getContenu());
             r.setLastMessageAt(last.getDateEnvoi());
         }
+        return r;
+    }
+
+    private ConversationItemResponse mapItemWithUnread(Conversation c, Integer authUserId) {
+        ConversationItemResponse r = mapItem(c);
+        long count = messageRepository.countByConversation_IdAndEstLuFalseAndExpediteur_IdNot(c.getId(), authUserId);
+        r.setUnreadCount((int) count);
+        r.setUnread(count > 0);
         return r;
     }
 

@@ -14,6 +14,8 @@ public class ConversationItemResponse {
     private String lastMessage;
     private Date lastMessageAt;
     private Boolean active;
+    private Integer unreadCount;
+    private Boolean unread;
 
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }
@@ -47,4 +49,10 @@ public class ConversationItemResponse {
 
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
+
+    public Integer getUnreadCount() { return unreadCount; }
+    public void setUnreadCount(Integer unreadCount) { this.unreadCount = unreadCount; }
+
+    public Boolean getUnread() { return unread; }
+    public void setUnread(Boolean unread) { this.unread = unread; }
 }
