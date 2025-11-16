@@ -96,6 +96,30 @@ public class AdminService {
         );
     }
 
+    public ProfessionnelSummaryResponse rejectProfessionnel(Integer id) {
+        Professionnel p = professionnelRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Professionnel introuvable: " + id));
+
+        ProfessionnelSummaryResponse summary = new ProfessionnelSummaryResponse(
+                p.getId(),
+                p.getNom(),
+                p.getPrenom(),
+                p.getTelephone(),
+                p.getAdresse(),
+                p.getEmail(),
+                p.getEntreprise(),
+                p.getDescription(),
+                p.getEstValider(),
+                p.getDocumentJustificatif(),
+                p.getSpecialite() != null ? p.getSpecialite().getId() : null,
+                p.getSpecialite() != null ? p.getSpecialite().getLibelle() : null,
+                p.getDateInscription()
+        );
+
+        professionnelRepository.delete(p);
+        return summary;
+    }
+
     @Transactional(readOnly = true)
     public List<UtilisateurSummaryResponse> listAllUsers() {
         return utilisateurRepository.findAll().stream()

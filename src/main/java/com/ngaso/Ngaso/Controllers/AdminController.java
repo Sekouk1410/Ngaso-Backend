@@ -34,6 +34,11 @@ public class AdminController {
         return ResponseEntity.ok(adminService.validateProfessionnel(id));
     }
 
+    @PostMapping("/professionnels/{id}/reject")
+    public ResponseEntity<ProfessionnelSummaryResponse> reject(@PathVariable Integer id) {
+        return ResponseEntity.ok(adminService.rejectProfessionnel(id));
+    }
+
     @PostMapping("/specialites")
     public ResponseEntity<Specialite> createSpecialite(@RequestBody SpecialiteCreateRequest request) {
         Specialite s = new Specialite();
@@ -45,9 +50,21 @@ public class AdminController {
     public ResponseEntity<List<SpecialiteResponse>> listSpecialites() {
         List<SpecialiteResponse> result = specialiteRepository.findAll()
                 .stream()
-                .map(s -> new SpecialiteResponse(s.getId(), s.getLibelle()))
+                .map(s -> new SpecialiteResponse(
+                        s.getId(),
+                        s.getLibelle(),
+                        s.getProfessionnels() != null ? (long) s.getProfessionnels().size() : 0L
+                ))
                 .collect(Collectors.toList());
         return ResponseEntity.ok(result);
+    }
+
+    @DeleteMapping("/specialites/{id}")
+    public ResponseEntity<Void> deleteSpecialite(@PathVariable Integer id) {
+        Specialite s = specialiteRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Spécialité introuvable: " + id));
+        specialiteRepository.delete(s);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/utilisateurs")
