@@ -65,6 +65,22 @@ public class AdminController {
         return ResponseEntity.ok(adminService.enableUser(id));
     }
 
+    @GetMapping("/projets")
+    public ResponseEntity<PagedProjetAdminResponse> listProjets(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        org.springframework.data.domain.Page<ProjetAdminItemResponse> p = adminService.listAllProjets(page, size);
+        PagedProjetAdminResponse body = new PagedProjetAdminResponse(
+                p.getContent(),
+                p.getNumber(),
+                p.getSize(),
+                p.getTotalElements(),
+                p.getTotalPages(),
+                p.hasNext()
+        );
+        return ResponseEntity.ok(body);
+    }
+
     // ====== Modèles d'étapes ======
     @PostMapping("/modeles-etapes")
     public ResponseEntity<ModeleEtapeResponse> createModeleEtape(@RequestBody ModeleEtapeCreateRequest request) {

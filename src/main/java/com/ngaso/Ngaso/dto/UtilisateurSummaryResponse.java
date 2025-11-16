@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Date;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -19,4 +21,5 @@ public class UtilisateurSummaryResponse {
     private String email;
     private Role role;
     private Boolean actif;
+    private Date dateInscription;
 }
