@@ -17,4 +17,5 @@ public class ModeleEtapeResponse {
     private Integer ordre;
     private List<Integer> specialiteIds;
     private List<String> specialiteLibelles;
+    private Long nombreIllustrations;
 }

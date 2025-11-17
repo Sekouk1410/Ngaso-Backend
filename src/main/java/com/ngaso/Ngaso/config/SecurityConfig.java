@@ -45,6 +45,8 @@ public class SecurityConfig {
                 // Public listing of specialites (front needs it without auth)
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/admin/specialites").permitAll()
                 .requestMatchers("/uploads/**").permitAll()
+                // Files (justificatifs, etc.) accessibles sans auth (utilisés surtout par l'admin côté front)
+                .requestMatchers("/files/**").permitAll()
                 // Admin scope
                 .requestMatchers("/admin/**").hasRole("Admin")
                 // Professionnel scope

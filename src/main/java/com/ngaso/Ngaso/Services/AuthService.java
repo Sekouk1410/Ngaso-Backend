@@ -65,6 +65,7 @@ public class AuthService {
         n.setEmail(request.getEmail());
         n.setPassword(passwordEncoder.encode(request.getPassword()));
         n.setRole(Role.Novice);
+        n.setDateInscription(new Date());
         Novice saved = noviceRepository.save(n);
         return new AuthLoginResponse(saved.getId(), saved.getRole(), "Inscription réussie", null);
     }
@@ -85,6 +86,7 @@ public class AuthService {
         p.setDescription(request.getDescription());
         p.setEstValider(false);
         p.setDateCréation(new Date());
+        p.setDateInscription(new Date());
         // Handle justificatif upload
         if (document != null && !document.isEmpty()) {
             try {
@@ -98,7 +100,8 @@ public class AuthService {
                 try (java.io.InputStream in = document.getInputStream()) {
                     java.nio.file.Files.copy(in, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
                 }
-                p.setDocumentJustificatif(target.toString().replace('\\', '/'));
+                // On ne stocke que le nom de fichier, l'accès se fera via un endpoint HTTP
+                p.setDocumentJustificatif(safeName);
             } catch (java.lang.IllegalStateException | java.io.IOException ex) {
                 throw new IllegalArgumentException("Echec d'enregistrement du document justificatif");
             }

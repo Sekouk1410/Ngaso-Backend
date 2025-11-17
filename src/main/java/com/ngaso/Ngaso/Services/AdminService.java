@@ -5,6 +5,7 @@ import com.ngaso.Ngaso.DAO.UtilisateurRepository;
 import com.ngaso.Ngaso.DAO.ModeleEtapeRepository;
 import com.ngaso.Ngaso.DAO.IllustrationRepository;
 import com.ngaso.Ngaso.DAO.SpecialiteRepository;
+import com.ngaso.Ngaso.DAO.ProjetConstructionRepository;
 import com.ngaso.Ngaso.Models.entites.Professionnel;
 import com.ngaso.Ngaso.Models.entites.Utilisateur;
 import com.ngaso.Ngaso.Models.entites.ModeleEtape;
@@ -33,19 +34,22 @@ public class AdminService {
     private final IllustrationRepository illustrationRepository;
     private final SpecialiteRepository specialiteRepository;
     private final FileStorageService storageService;
+    private final ProjetConstructionRepository projetConstructionRepository;
 
     public AdminService(ProfessionnelRepository professionnelRepository,
                         UtilisateurRepository utilisateurRepository,
                         ModeleEtapeRepository modeleEtapeRepository,
                         IllustrationRepository illustrationRepository,
                         SpecialiteRepository specialiteRepository,
-                        FileStorageService storageService) {
+                        FileStorageService storageService,
+                        ProjetConstructionRepository projetConstructionRepository) {
         this.professionnelRepository = professionnelRepository;
         this.utilisateurRepository = utilisateurRepository;
         this.modeleEtapeRepository = modeleEtapeRepository;
         this.illustrationRepository = illustrationRepository;
         this.specialiteRepository = specialiteRepository;
         this.storageService = storageService;
+        this.projetConstructionRepository = projetConstructionRepository;
     }
 
     @Transactional(readOnly = true)
@@ -64,7 +68,8 @@ public class AdminService {
                         p.getEstValider(),
                         p.getDocumentJustificatif(),
                         p.getSpecialite() != null ? p.getSpecialite().getId() : null,
-                        p.getSpecialite() != null ? p.getSpecialite().getLibelle() : null
+                        p.getSpecialite() != null ? p.getSpecialite().getLibelle() : null,
+                        p.getDateInscription()
                 ))
                 .collect(Collectors.toList());
     }
@@ -86,8 +91,33 @@ public class AdminService {
                 saved.getEstValider(),
                 saved.getDocumentJustificatif(),
                 saved.getSpecialite() != null ? saved.getSpecialite().getId() : null,
-                saved.getSpecialite() != null ? saved.getSpecialite().getLibelle() : null
+                saved.getSpecialite() != null ? saved.getSpecialite().getLibelle() : null,
+                saved.getDateInscription()
         );
+    }
+
+    public ProfessionnelSummaryResponse rejectProfessionnel(Integer id) {
+        Professionnel p = professionnelRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Professionnel introuvable: " + id));
+
+        ProfessionnelSummaryResponse summary = new ProfessionnelSummaryResponse(
+                p.getId(),
+                p.getNom(),
+                p.getPrenom(),
+                p.getTelephone(),
+                p.getAdresse(),
+                p.getEmail(),
+                p.getEntreprise(),
+                p.getDescription(),
+                p.getEstValider(),
+                p.getDocumentJustificatif(),
+                p.getSpecialite() != null ? p.getSpecialite().getId() : null,
+                p.getSpecialite() != null ? p.getSpecialite().getLibelle() : null,
+                p.getDateInscription()
+        );
+
+        professionnelRepository.delete(p);
+        return summary;
     }
 
     @Transactional(readOnly = true)
@@ -106,7 +136,8 @@ public class AdminService {
                 u.getAdresse(),
                 u.getEmail(),
                 u.getRole(),
-                u.getActif()
+                u.getActif(),
+                u.getDateInscription()
         );
     }
 
@@ -124,6 +155,68 @@ public class AdminService {
         u.setActif(true);
         Utilisateur saved = utilisateurRepository.save(u);
         return toUserSummary(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<com.ngaso.Ngaso.dto.ProjetAdminItemResponse> listAllProjets(int page, int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(
+                Math.max(page, 0), Math.max(size, 1),
+                org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "dateCréation"));
+
+        org.springframework.data.domain.Page<com.ngaso.Ngaso.Models.entites.ProjetConstruction> projets = projetConstructionRepository
+                .findAll(pageable);
+
+        java.util.List<com.ngaso.Ngaso.dto.ProjetAdminItemResponse> content = projets.stream().map(p -> {
+            com.ngaso.Ngaso.dto.ProjetAdminItemResponse r = new com.ngaso.Ngaso.dto.ProjetAdminItemResponse();
+            r.setId(p.getIdProjet());
+            r.setTitre(p.getTitre());
+            if (p.getProprietaire() != null) {
+                r.setProprietaireNom(p.getProprietaire().getNom());
+                r.setProprietairePrenom(p.getProprietaire().getPrenom());
+            }
+            r.setLocalisation(p.getLocalisation());
+            r.setBudget(p.getBudget());
+            r.setDateCreation(p.getDateCréation());
+
+            int total = p.getEtapes() != null ? p.getEtapes().size() : 0;
+            int valides = p.getEtapes() != null
+                    ? (int) p.getEtapes().stream().filter(e -> java.lang.Boolean.TRUE.equals(e.getEstValider())).count()
+                    : 0;
+            int percent = total > 0 ? (int) java.lang.Math.round((valides * 100.0) / total) : 0;
+            r.setProgressPercent(percent);
+
+            java.util.List<com.ngaso.Ngaso.Models.entites.EtapeConstruction> steps =
+                    p.getEtapes() != null ? new java.util.ArrayList<>(p.getEtapes()) : java.util.Collections.emptyList();
+            steps.sort((a, b) -> {
+                java.lang.Integer o1 = a.getModele() != null ? a.getModele().getOrdre() : null;
+                java.lang.Integer o2 = b.getModele() != null ? b.getModele().getOrdre() : null;
+                if (o1 == null && o2 == null) return 0;
+                if (o1 == null) return 1;
+                if (o2 == null) return -1;
+                return java.lang.Integer.compare(o1, o2);
+            });
+            int currentIdx = -1;
+            for (int i = 0; i < steps.size(); i++) {
+                if (!java.lang.Boolean.TRUE.equals(steps.get(i).getEstValider())) { currentIdx = i; break; }
+            }
+            if (currentIdx == -1 && !steps.isEmpty()) {
+                currentIdx = steps.size() - 1;
+            }
+            String currentName = null;
+            if (currentIdx >= 0 && currentIdx < steps.size()) {
+                com.ngaso.Ngaso.Models.entites.ModeleEtape m = steps.get(currentIdx).getModele();
+                currentName = m != null ? m.getNom() : null;
+            }
+            r.setCurrentEtape(currentName);
+
+            return r;
+        }).collect(java.util.stream.Collectors.toList());
+
+        return new org.springframework.data.domain.PageImpl<>(
+                content,
+                pageable,
+                projets.getTotalElements()
+        );
     }
 
     // ====== Modele Etape ======
@@ -146,7 +239,31 @@ public class AdminService {
         ModeleEtape saved = modeleEtapeRepository.save(m);
         List<Integer> ids = saved.getSpecialites().stream().map(Specialite::getId).collect(Collectors.toList());
         List<String> labels = saved.getSpecialites().stream().map(Specialite::getLibelle).collect(Collectors.toList());
-        return new ModeleEtapeResponse(saved.getId(), saved.getNom(), saved.getDescription(), saved.getOrdre(), ids, labels);
+        long nombreIllustrations = saved.getIllustrations() != null ? saved.getIllustrations().size() : 0L;
+        return new ModeleEtapeResponse(saved.getId(), saved.getNom(), saved.getDescription(), saved.getOrdre(), ids, labels, nombreIllustrations);
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.List<ModeleEtapeResponse> listModeleEtapes() {
+        java.util.List<ModeleEtape> modeles = modeleEtapeRepository.findAllByOrderByOrdreAsc();
+        return modeles.stream().map(m -> {
+            java.util.List<Integer> ids = m.getSpecialites() != null
+                    ? m.getSpecialites().stream().map(Specialite::getId).collect(Collectors.toList())
+                    : java.util.Collections.emptyList();
+            java.util.List<String> labels = m.getSpecialites() != null
+                    ? m.getSpecialites().stream().map(Specialite::getLibelle).collect(Collectors.toList())
+                    : java.util.Collections.emptyList();
+            long nombreIllustrations = m.getIllustrations() != null ? m.getIllustrations().size() : 0L;
+            return new ModeleEtapeResponse(
+                    m.getId(),
+                    m.getNom(),
+                    m.getDescription(),
+                    m.getOrdre(),
+                    ids,
+                    labels,
+                    nombreIllustrations
+            );
+        }).collect(Collectors.toList());
     }
 
     public IllustrationResponse addIllustrationToModele(Integer modeleId, IllustrationCreateRequest req, org.springframework.web.multipart.MultipartFile image) {
@@ -166,6 +283,43 @@ public class AdminService {
             return new IllustrationResponse(saved.getId(), saved.getTitre(), saved.getDescription(), saved.getUrlImage(), modele.getId());
         } catch (Exception ex) {
             throw new IllegalArgumentException("Echec d'enregistrement de l'image: " + ex.getMessage());
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.List<IllustrationResponse> listIllustrationsForModele(Integer modeleId) {
+        ModeleEtape modele = modeleEtapeRepository.findById(modeleId)
+                .orElseThrow(() -> new IllegalArgumentException("Modèle d'étape introuvable: " + modeleId));
+        java.util.List<Illustration> ills = modele.getIllustrations();
+        if (ills == null) {
+            return java.util.Collections.emptyList();
+        }
+        return ills.stream()
+                .map(ill -> new IllustrationResponse(
+                        ill.getId(),
+                        ill.getTitre(),
+                        ill.getDescription(),
+                        ill.getUrlImage(),
+                        modele.getId()
+                ))
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    public void deleteModeleEtape(Integer id) {
+        ModeleEtape m = modeleEtapeRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Modèle d'étape introuvable: " + id));
+        modeleEtapeRepository.delete(m);
+    }
+
+    public void deleteIllustration(Integer id) {
+        Illustration ill = illustrationRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Illustration introuvable: " + id));
+        String url = ill.getUrlImage();
+        illustrationRepository.delete(ill);
+        try {
+            storageService.deleteByPublicUrl(url);
+        } catch (Exception ignored) {
+            // On ignore les erreurs de suppression de fichier pour ne pas bloquer la suppression logique
         }
     }
 }

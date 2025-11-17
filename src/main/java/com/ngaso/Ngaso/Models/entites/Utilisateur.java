@@ -11,6 +11,7 @@ import com.ngaso.Ngaso.Models.enums.Role;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -41,6 +42,9 @@ public abstract class Utilisateur {
 
     @Column(nullable = false)
     private Boolean actif = true;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date dateInscription;
 
     @ManyToOne
     @JoinColumn(name = "administrateur_id")
