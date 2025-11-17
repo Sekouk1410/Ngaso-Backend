@@ -239,7 +239,31 @@ public class AdminService {
         ModeleEtape saved = modeleEtapeRepository.save(m);
         List<Integer> ids = saved.getSpecialites().stream().map(Specialite::getId).collect(Collectors.toList());
         List<String> labels = saved.getSpecialites().stream().map(Specialite::getLibelle).collect(Collectors.toList());
-        return new ModeleEtapeResponse(saved.getId(), saved.getNom(), saved.getDescription(), saved.getOrdre(), ids, labels);
+        long nombreIllustrations = saved.getIllustrations() != null ? saved.getIllustrations().size() : 0L;
+        return new ModeleEtapeResponse(saved.getId(), saved.getNom(), saved.getDescription(), saved.getOrdre(), ids, labels, nombreIllustrations);
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.List<ModeleEtapeResponse> listModeleEtapes() {
+        java.util.List<ModeleEtape> modeles = modeleEtapeRepository.findAllByOrderByOrdreAsc();
+        return modeles.stream().map(m -> {
+            java.util.List<Integer> ids = m.getSpecialites() != null
+                    ? m.getSpecialites().stream().map(Specialite::getId).collect(Collectors.toList())
+                    : java.util.Collections.emptyList();
+            java.util.List<String> labels = m.getSpecialites() != null
+                    ? m.getSpecialites().stream().map(Specialite::getLibelle).collect(Collectors.toList())
+                    : java.util.Collections.emptyList();
+            long nombreIllustrations = m.getIllustrations() != null ? m.getIllustrations().size() : 0L;
+            return new ModeleEtapeResponse(
+                    m.getId(),
+                    m.getNom(),
+                    m.getDescription(),
+                    m.getOrdre(),
+                    ids,
+                    labels,
+                    nombreIllustrations
+            );
+        }).collect(Collectors.toList());
     }
 
     public IllustrationResponse addIllustrationToModele(Integer modeleId, IllustrationCreateRequest req, org.springframework.web.multipart.MultipartFile image) {
@@ -259,6 +283,43 @@ public class AdminService {
             return new IllustrationResponse(saved.getId(), saved.getTitre(), saved.getDescription(), saved.getUrlImage(), modele.getId());
         } catch (Exception ex) {
             throw new IllegalArgumentException("Echec d'enregistrement de l'image: " + ex.getMessage());
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.List<IllustrationResponse> listIllustrationsForModele(Integer modeleId) {
+        ModeleEtape modele = modeleEtapeRepository.findById(modeleId)
+                .orElseThrow(() -> new IllegalArgumentException("Modèle d'étape introuvable: " + modeleId));
+        java.util.List<Illustration> ills = modele.getIllustrations();
+        if (ills == null) {
+            return java.util.Collections.emptyList();
+        }
+        return ills.stream()
+                .map(ill -> new IllustrationResponse(
+                        ill.getId(),
+                        ill.getTitre(),
+                        ill.getDescription(),
+                        ill.getUrlImage(),
+                        modele.getId()
+                ))
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    public void deleteModeleEtape(Integer id) {
+        ModeleEtape m = modeleEtapeRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Modèle d'étape introuvable: " + id));
+        modeleEtapeRepository.delete(m);
+    }
+
+    public void deleteIllustration(Integer id) {
+        Illustration ill = illustrationRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Illustration introuvable: " + id));
+        String url = ill.getUrlImage();
+        illustrationRepository.delete(ill);
+        try {
+            storageService.deleteByPublicUrl(url);
+        } catch (Exception ignored) {
+            // On ignore les erreurs de suppression de fichier pour ne pas bloquer la suppression logique
         }
     }
 }

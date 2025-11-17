@@ -104,6 +104,11 @@ public class AdminController {
         return ResponseEntity.ok(adminService.createModeleEtape(request));
     }
 
+    @GetMapping("/modeles-etapes")
+    public ResponseEntity<List<ModeleEtapeResponse>> listModelesEtapes() {
+        return ResponseEntity.ok(adminService.listModeleEtapes());
+    }
+
     @PostMapping(value = "/modeles-etapes/{modeleId}/illustrations", consumes = {"multipart/form-data"})
     public ResponseEntity<IllustrationResponse> addIllustration(
             @PathVariable Integer modeleId,
@@ -111,5 +116,22 @@ public class AdminController {
             @RequestPart("image") MultipartFile image
     ) {
         return ResponseEntity.ok(adminService.addIllustrationToModele(modeleId, data, image));
+    }
+
+    @GetMapping("/modeles-etapes/{modeleId}/illustrations")
+    public ResponseEntity<List<IllustrationResponse>> listIllustrations(@PathVariable Integer modeleId) {
+        return ResponseEntity.ok(adminService.listIllustrationsForModele(modeleId));
+    }
+
+    @DeleteMapping("/modeles-etapes/{id}")
+    public ResponseEntity<Void> deleteModeleEtape(@PathVariable Integer id) {
+        adminService.deleteModeleEtape(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/illustrations/{id}")
+    public ResponseEntity<Void> deleteIllustration(@PathVariable Integer id) {
+        adminService.deleteIllustration(id);
+        return ResponseEntity.noContent().build();
     }
 }
