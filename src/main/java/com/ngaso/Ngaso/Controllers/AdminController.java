@@ -24,6 +24,11 @@ public class AdminController {
         this.specialiteRepository = specialiteRepository;
     }
 
+    @GetMapping("/dashboard/stats")
+    public ResponseEntity<AdminDashboardStatsResponse> getDashboardStats() {
+        return ResponseEntity.ok(adminService.getDashboardStats());
+    }
+
     @GetMapping("/professionnels/pending")
     public ResponseEntity<List<ProfessionnelSummaryResponse>> listPending() {
         return ResponseEntity.ok(adminService.listPendingProfessionnels());

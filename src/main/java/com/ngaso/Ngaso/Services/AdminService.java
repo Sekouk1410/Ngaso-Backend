@@ -11,15 +11,21 @@ import com.ngaso.Ngaso.Models.entites.Utilisateur;
 import com.ngaso.Ngaso.Models.entites.ModeleEtape;
 import com.ngaso.Ngaso.Models.entites.Illustration;
 import com.ngaso.Ngaso.Models.entites.Specialite;
+import com.ngaso.Ngaso.Models.enums.EtatProjet;
+import com.ngaso.Ngaso.Models.enums.Role;
 import com.ngaso.Ngaso.dto.ProfessionnelSummaryResponse;
 import com.ngaso.Ngaso.dto.UtilisateurSummaryResponse;
 import com.ngaso.Ngaso.dto.ModeleEtapeCreateRequest;
 import com.ngaso.Ngaso.dto.ModeleEtapeResponse;
 import com.ngaso.Ngaso.dto.IllustrationCreateRequest;
 import com.ngaso.Ngaso.dto.IllustrationResponse;
+import com.ngaso.Ngaso.dto.AdminDashboardStatsResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -50,6 +56,70 @@ public class AdminService {
         this.specialiteRepository = specialiteRepository;
         this.storageService = storageService;
         this.projetConstructionRepository = projetConstructionRepository;
+    }
+
+    @Transactional(readOnly = true)
+    public AdminDashboardStatsResponse getDashboardStats() {
+        LocalDate now = LocalDate.now();
+        LocalDate firstDayCurrentMonth = now.withDayOfMonth(1);
+        LocalDate firstDayPreviousMonth = firstDayCurrentMonth.minusMonths(1);
+
+        Date currentMonthStart = Date.from(firstDayCurrentMonth.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        Date nextMonthStart = Date.from(firstDayCurrentMonth.plusMonths(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
+        Date previousMonthStart = Date.from(firstDayPreviousMonth.atStartOfDay(ZoneId.systemDefault()).toInstant());
+
+        AdminDashboardStatsResponse resp = new AdminDashboardStatsResponse();
+        // Utilisateurs totaux
+        long totalUsers = utilisateurRepository.count();
+        long usersCurrentMonth = utilisateurRepository.countRegisteredBetween(currentMonthStart, nextMonthStart);
+        long usersPreviousMonth = utilisateurRepository.countRegisteredBetween(previousMonthStart, currentMonthStart);
+
+        AdminDashboardStatsResponse.Metric mUsers = new AdminDashboardStatsResponse.Metric();
+        mUsers.setValue(totalUsers);
+        mUsers.setChangePercent(computeChangePercent(usersCurrentMonth, usersPreviousMonth));
+        resp.setUtilisateursTotaux(mUsers);
+
+        // Projets actifs (en cours)
+        long activeProjects = projetConstructionRepository.countByEtat(EtatProjet.En_Cours);
+        long activeCurrentMonth = projetConstructionRepository.countByEtatAndDateCreatedBetween(EtatProjet.En_Cours, currentMonthStart, nextMonthStart);
+        long activePreviousMonth = projetConstructionRepository.countByEtatAndDateCreatedBetween(EtatProjet.En_Cours, previousMonthStart, currentMonthStart);
+
+        AdminDashboardStatsResponse.Metric mActive = new AdminDashboardStatsResponse.Metric();
+        mActive.setValue(activeProjects);
+        mActive.setChangePercent(computeChangePercent(activeCurrentMonth, activePreviousMonth));
+        resp.setProjetsActifs(mActive);
+
+        // Projets ce mois
+        long projetsCurrentMonth = projetConstructionRepository.countCreatedBetween(currentMonthStart, nextMonthStart);
+        long projetsPreviousMonth = projetConstructionRepository.countCreatedBetween(previousMonthStart, currentMonthStart);
+
+        AdminDashboardStatsResponse.Metric mMonth = new AdminDashboardStatsResponse.Metric();
+        mMonth.setValue(projetsCurrentMonth);
+        mMonth.setChangePercent(computeChangePercent(projetsCurrentMonth, projetsPreviousMonth));
+        resp.setProjetsCeMois(mMonth);
+
+        // Taux d'achèvement = projets terminés / total projets
+        long totalProjects = projetConstructionRepository.count();
+        long finishedProjects = projetConstructionRepository.countByEtat(EtatProjet.Termine);
+        int completionRate = totalProjects > 0 ? (int) Math.round((finishedProjects * 100.0) / totalProjects) : 0;
+
+        long totalProjectsPrev = projetConstructionRepository.countCreatedBetween(previousMonthStart, currentMonthStart);
+        long finishedPrev = projetConstructionRepository.countByEtatAndDateCreatedBetween(EtatProjet.Termine, previousMonthStart, currentMonthStart);
+        int completionRatePrev = totalProjectsPrev > 0 ? (int) Math.round((finishedPrev * 100.0) / totalProjectsPrev) : 0;
+
+        AdminDashboardStatsResponse.RateMetric mCompletion = new AdminDashboardStatsResponse.RateMetric();
+        mCompletion.setValue(completionRate);
+        mCompletion.setChangePercent(computeChangePercent(completionRate, completionRatePrev));
+        resp.setTauxAchevement(mCompletion);
+
+        return resp;
+    }
+
+    private int computeChangePercent(long current, long previous) {
+        if (previous <= 0) {
+            return current > 0 ? 100 : 0;
+        }
+        return (int) Math.round(((current - previous) * 100.0) / previous);
     }
 
     @Transactional(readOnly = true)

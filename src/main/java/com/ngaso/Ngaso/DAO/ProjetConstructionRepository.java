@@ -9,6 +9,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Page;
 import com.ngaso.Ngaso.Models.enums.EtatProjet;
 
+import java.util.Date;
+
 public interface ProjetConstructionRepository extends JpaRepository<ProjetConstruction, Integer> {
     List<ProjetConstruction> findByProprietaire_Id(Integer proprietaireId);
 
@@ -24,4 +26,13 @@ public interface ProjetConstructionRepository extends JpaRepository<ProjetConstr
 
     @Query("SELECT p FROM ProjetConstruction p WHERE p.proprietaire.id = :noviceId ORDER BY p.dateCréation DESC")
     List<ProjetConstruction> findLastByNovice(@Param("noviceId") Integer noviceId, Pageable pageable);
+
+    @Query("SELECT COUNT(p) FROM ProjetConstruction p WHERE p.dateCréation BETWEEN :start AND :end")
+    long countCreatedBetween(@Param("start") Date start, @Param("end") Date end);
+
+    @Query("SELECT COUNT(p) FROM ProjetConstruction p WHERE p.etat = :etat")
+    long countByEtat(@Param("etat") EtatProjet etat);
+
+    @Query("SELECT COUNT(p) FROM ProjetConstruction p WHERE p.etat = :etat AND p.dateCréation BETWEEN :start AND :end")
+    long countByEtatAndDateCreatedBetween(@Param("etat") EtatProjet etat, @Param("start") Date start, @Param("end") Date end);
 }
