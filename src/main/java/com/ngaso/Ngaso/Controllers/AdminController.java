@@ -4,6 +4,7 @@ import com.ngaso.Ngaso.Models.entites.Professionnel;
 import com.ngaso.Ngaso.Services.AdminService;
 import com.ngaso.Ngaso.DAO.SpecialiteRepository;
 import com.ngaso.Ngaso.Models.entites.Specialite;
+import com.ngaso.Ngaso.Models.enums.Role;
 import com.ngaso.Ngaso.dto.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -73,9 +74,21 @@ public class AdminController {
     }
 
     @GetMapping("/utilisateurs")
-    public ResponseEntity<List<UtilisateurSummaryResponse>> listUtilisateurs() {
-        return ResponseEntity.ok(adminService.listAllUsers());
-    }
+    public ResponseEntity<PagedUtilisateurResponse> listUtilisateurs(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) Role role) {
+            org.springframework.data.domain.Page<UtilisateurSummaryResponse> p = adminService.listAllUsers(page, size, role);
+            PagedUtilisateurResponse body = new PagedUtilisateurResponse(
+                    p.getContent(),
+                    p.getNumber(),
+                    p.getSize(),
+                    p.getTotalElements(),
+                    p.getTotalPages(),
+                    p.hasNext()
+            );
+            return ResponseEntity.ok(body);
+        }
 
     @PostMapping("/utilisateurs/{id}/disable")
     public ResponseEntity<UtilisateurSummaryResponse> disableUser(@PathVariable Integer id) {

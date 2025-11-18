@@ -6,6 +6,8 @@ import java.util.Optional;
 import com.ngaso.Ngaso.Models.enums.Role;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.Date;
 
@@ -15,6 +17,8 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Intege
     boolean existsByEmail(String email);
 
     long countByRole(Role role);
+
+    Page<Utilisateur> findByRole(Role role, Pageable pageable);
 
     @Query("SELECT COUNT(u) FROM Utilisateur u WHERE u.dateInscription BETWEEN :start AND :end")
     long countRegisteredBetween(@Param("start") Date start, @Param("end") Date end);

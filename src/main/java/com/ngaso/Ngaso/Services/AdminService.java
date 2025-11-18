@@ -29,6 +29,11 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 @Service
 @Transactional
@@ -191,10 +196,25 @@ public class AdminService {
     }
 
     @Transactional(readOnly = true)
-    public List<UtilisateurSummaryResponse> listAllUsers() {
-        return utilisateurRepository.findAll().stream()
+    public Page<UtilisateurSummaryResponse> listAllUsers(int page, int size, Role role) {
+        Pageable pageable = PageRequest.of(
+                Math.max(page, 0),
+                Math.max(size, 1),
+                Sort.by(Sort.Direction.DESC, "dateInscription")
+        );
+
+        Page<Utilisateur> usersPage;
+        if (role != null) {
+            usersPage = utilisateurRepository.findByRole(role, pageable);
+        } else {
+            usersPage = utilisateurRepository.findAll(pageable);
+        }
+
+        List<UtilisateurSummaryResponse> content = usersPage.stream()
                 .map(this::toUserSummary)
                 .collect(Collectors.toList());
+
+        return new PageImpl<>(content, pageable, usersPage.getTotalElements());
     }
 
     private UtilisateurSummaryResponse toUserSummary(Utilisateur u) {
