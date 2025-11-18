@@ -31,8 +31,19 @@ public class AdminController {
     }
 
     @GetMapping("/professionnels/pending")
-    public ResponseEntity<List<ProfessionnelSummaryResponse>> listPending() {
-        return ResponseEntity.ok(adminService.listPendingProfessionnels());
+    public ResponseEntity<PagedProfessionnelResponse> listPending(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        org.springframework.data.domain.Page<ProfessionnelSummaryResponse> p = adminService.listPendingProfessionnels(page, size);
+        PagedProfessionnelResponse body = new PagedProfessionnelResponse(
+                p.getContent(),
+                p.getNumber(),
+                p.getSize(),
+                p.getTotalElements(),
+                p.getTotalPages(),
+                p.hasNext()
+        );
+        return ResponseEntity.ok(body);
     }
 
     @PostMapping("/professionnels/{id}/validate")
