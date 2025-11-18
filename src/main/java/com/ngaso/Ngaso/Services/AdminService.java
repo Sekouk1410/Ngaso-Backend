@@ -128,9 +128,16 @@ public class AdminService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProfessionnelSummaryResponse> listPendingProfessionnels() {
-        return professionnelRepository.findByEstValider(false)
-                .stream()
+    public Page<ProfessionnelSummaryResponse> listPendingProfessionnels(int page, int size) {
+        Pageable pageable = PageRequest.of(
+                Math.max(page, 0),
+                Math.max(size, 1),
+                Sort.by(Sort.Direction.DESC, "dateInscription")
+        );
+
+        Page<Professionnel> prosPage = professionnelRepository.findByEstValider(false, pageable);
+
+        List<ProfessionnelSummaryResponse> content = prosPage.stream()
                 .map(p -> new ProfessionnelSummaryResponse(
                         p.getId(),
                         p.getNom(),
@@ -147,6 +154,8 @@ public class AdminService {
                         p.getDateInscription()
                 ))
                 .collect(Collectors.toList());
+
+        return new PageImpl<>(content, pageable, prosPage.getTotalElements());
     }
 
     public ProfessionnelSummaryResponse validateProfessionnel(Integer id) {
