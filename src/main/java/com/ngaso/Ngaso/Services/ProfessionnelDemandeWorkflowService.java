@@ -92,9 +92,14 @@ public class ProfessionnelDemandeWorkflowService {
         if (Boolean.FALSE.equals(pro.getEstValider())) {
             throw new AccessDeniedException("Compte professionnel non validé");
         }
-        List<DemandeService> demandes = (statut == null)
-                ? demandeRepo.findByProfessionnel_IdAndEtapeIsNotNull(professionnelId)
-                : demandeRepo.findByProfessionnel_IdAndEtapeIsNotNullAndStatut(professionnelId, statut);
+        List<DemandeService> demandes;
+        if (statut == null) {
+            demandes = demandeRepo.findByProfessionnel_IdAndEtapeIsNotNullAndStatutNot(professionnelId, StatutDemande.ANNULER);
+        } else if (statut == StatutDemande.ANNULER) {
+            demandes = java.util.Collections.emptyList();
+        } else {
+            demandes = demandeRepo.findByProfessionnel_IdAndEtapeIsNotNullAndStatut(professionnelId, statut);
+        }
         return demandes.stream().map(d -> new DemandeProItemResponse(
                 d.getId(),
                 d.getMessage(),

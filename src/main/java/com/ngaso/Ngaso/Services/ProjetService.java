@@ -374,7 +374,7 @@ public class ProjetService {
         if (p == null || p.getProprietaire() == null || p.getProprietaire().getId() == null || !p.getProprietaire().getId().equals(authUserId)) {
             throw new org.springframework.security.access.AccessDeniedException("Non autorisé: cette étape n'appartient pas à votre projet");
         }
-        return demandeRepo.findByEtape_IdEtapeAndNovice_Id(etapeId, authUserId)
+        return demandeRepo.findByEtape_IdEtapeAndNovice_IdAndStatutNot(etapeId, authUserId, StatutDemande.ANNULER)
                 .stream()
                 .map(d -> new DemandeBriefResponse(
                         d.getId(),
@@ -397,7 +397,7 @@ public class ProjetService {
         if (p.getProprietaire() == null || p.getProprietaire().getId() == null || !p.getProprietaire().getId().equals(authUserId)) {
             throw new org.springframework.security.access.AccessDeniedException("Non autorisé: accès restreint à vos projets");
         }
-        return demandeRepo.findByEtape_Projet_IdProjetAndNovice_Id(projetId, authUserId)
+        return demandeRepo.findByEtape_Projet_IdProjetAndNovice_IdAndStatutNot(projetId, authUserId, StatutDemande.ANNULER)
                 .stream()
                 .map(d -> new DemandeProjectItemResponse(
                         d.getId(),
@@ -633,3 +633,4 @@ public class ProjetService {
         projetRepo.delete(p);
     }
 }
+
