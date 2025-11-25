@@ -179,7 +179,11 @@ public class ConversationService {
         }
         Message last = messageRepository.findTop1ByConversation_IdOrderByDateEnvoiDesc(c.getId());
         if (last != null) {
-            r.setLastMessage(last.getContenu());
+            String preview = last.getContenu();
+            if ((preview == null || preview.isBlank()) && last.getAttachmentUrl() != null) {
+                preview = "Pièce jointe";
+            }
+            r.setLastMessage(preview);
             r.setLastMessageAt(last.getDateEnvoi());
         }
         return r;
