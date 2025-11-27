@@ -1,6 +1,5 @@
 package com.ngaso.Ngaso.dto;
 
-import com.ngaso.Ngaso.Models.enums.Role;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,10 +9,6 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class AuthLoginResponse {
-    private Integer userId;
-    private Role role;
-    private String message;
-    private String token;
+public class RefreshTokenRequest {
     private String refreshToken;
 }

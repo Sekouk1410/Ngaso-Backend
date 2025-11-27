@@ -19,8 +19,11 @@ public class JwtService {
     @Value("${app.jwt.secret}")
     private String secret;
 
-    @Value("${app.jwt.expiration-ms:172800000}") // 48h
+    @Value("${app.jwt.expiration-ms:900000}") // 15 minutes par défaut
     private long expirationMs;
+
+    @Value("${app.jwt.refresh-expiration-ms:2592000000}") // 30 jours par défaut
+    private long refreshExpirationMs;
 
     private Key getSigningKey() {
         byte[] keyBytes = Decoders.BASE64.decode(secret);
@@ -32,7 +35,10 @@ public class JwtService {
         Date exp = new Date(now.getTime() + expirationMs);
         return Jwts.builder()
                 .setSubject(String.valueOf(userId))
-                .addClaims(Map.of("role", role))
+                .addClaims(Map.of(
+                        "role", role,
+                        "type", "ACCESS"
+                ))
                 .setIssuedAt(now)
                 .setExpiration(exp)
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
@@ -42,7 +48,33 @@ public class JwtService {
     public boolean isTokenValid(String token) {
         try {
             Claims claims = parseAllClaims(token);
-            return claims.getExpiration().after(new Date());
+            String type = claims.get("type", String.class);
+            return "ACCESS".equals(type) && claims.getExpiration().after(new Date());
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public String generateRefreshToken(Integer userId, String role) {
+        Date now = new Date();
+        Date exp = new Date(now.getTime() + refreshExpirationMs);
+        return Jwts.builder()
+                .setSubject(String.valueOf(userId))
+                .addClaims(Map.of(
+                        "role", role,
+                        "type", "REFRESH"
+                ))
+                .setIssuedAt(now)
+                .setExpiration(exp)
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public boolean isRefreshTokenValid(String token) {
+        try {
+            Claims claims = parseAllClaims(token);
+            String type = claims.get("type", String.class);
+            return "REFRESH".equals(type) && claims.getExpiration().after(new Date());
         } catch (Exception e) {
             return false;
         }

@@ -13,6 +13,7 @@ import com.ngaso.Ngaso.Models.entites.Administrateur;
 import com.ngaso.Ngaso.Models.enums.Role;
 import com.ngaso.Ngaso.dto.AuthLoginRequest;
 import com.ngaso.Ngaso.dto.AuthLoginResponse;
+import com.ngaso.Ngaso.dto.RefreshTokenRequest;
 import com.ngaso.Ngaso.dto.NoviceSignupRequest;
 import com.ngaso.Ngaso.dto.ProfessionnelSignupRequest;
 import org.springframework.stereotype.Service;
@@ -67,7 +68,7 @@ public class AuthService {
         n.setRole(Role.Novice);
         n.setDateInscription(new Date());
         Novice saved = noviceRepository.save(n);
-        return new AuthLoginResponse(saved.getId(), saved.getRole(), "Inscription réussie", null);
+        return new AuthLoginResponse(saved.getId(), saved.getRole(), "Inscription réussie", null, null);
     }
 
     public AuthLoginResponse registerProfessionnel(ProfessionnelSignupRequest request, org.springframework.web.multipart.MultipartFile document) {
@@ -117,7 +118,7 @@ public class AuthService {
                 .orElseThrow(() -> new IllegalArgumentException("Spécialité introuvable"));
         p.setSpecialite(spec);
         Professionnel saved = professionnelRepository.save(p);
-        return new AuthLoginResponse(saved.getId(), saved.getRole(), "Inscription réussie", null);
+        return new AuthLoginResponse(saved.getId(), saved.getRole(), "Inscription réussie", null, null);
     }
 
     @Transactional
@@ -151,7 +152,8 @@ public class AuthService {
                 throw new IllegalArgumentException("Identifiants invalides");
             }
             String token = jwtService.generateToken(admin.getId(), Role.Admin.name());
-            return new AuthLoginResponse(admin.getId(), Role.Admin, "Connexion réussie", token);
+            String refreshToken = jwtService.generateRefreshToken(admin.getId(), Role.Admin.name());
+            return new AuthLoginResponse(admin.getId(), Role.Admin, "Connexion réussie", token, refreshToken);
         }
 
         // Utilisateurs (Novice/Professionnel): login via telephone + password (normalize input)
@@ -169,10 +171,42 @@ public class AuthService {
                 throw new AccessDeniedException("Compte professionnel non validé");
             }
             String token = jwtService.generateToken(user.getId(), user.getRole().name());
-            return new AuthLoginResponse(user.getId(), user.getRole(), "Connexion réussie", token);
+            String refreshToken = jwtService.generateRefreshToken(user.getId(), user.getRole().name());
+            return new AuthLoginResponse(user.getId(), user.getRole(), "Connexion réussie", token, refreshToken);
         }
 
         throw new IllegalArgumentException("Fournissez email (admin) ou telephone (utilisateur)");
+    }
+
+    public AuthLoginResponse refreshToken(RefreshTokenRequest request) {
+        if (request == null || request.getRefreshToken() == null || request.getRefreshToken().isBlank()) {
+            throw new IllegalArgumentException("refreshToken requis");
+        }
+        String token = request.getRefreshToken();
+        if (!jwtService.isRefreshTokenValid(token)) {
+            throw new IllegalArgumentException("Refresh token invalide ou expiré");
+        }
+        io.jsonwebtoken.Claims claims = jwtService.parseAllClaims(token);
+        String subject = claims.getSubject();
+        String roleStr = claims.get("role", String.class);
+
+        if (subject == null || roleStr == null) {
+            throw new IllegalArgumentException("Refresh token invalide");
+        }
+
+        Integer userId = Integer.parseInt(subject);
+        Role role;
+        try {
+            role = Role.valueOf(roleStr);
+        } catch (IllegalArgumentException ex) {
+            // Admin role n'est pas dans l'enum Utilisateur.Role, on le gère séparément
+            role = Role.Admin;
+        }
+
+        String newAccessToken = jwtService.generateToken(userId, roleStr);
+        String newRefreshToken = jwtService.generateRefreshToken(userId, roleStr);
+
+        return new AuthLoginResponse(userId, role, "Token rafraîchi", newAccessToken, newRefreshToken);
     }
 }
 
