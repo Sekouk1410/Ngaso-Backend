@@ -16,6 +16,7 @@ public class EtapeWithIllustrationsResponse {
     private Integer modeleId;
     private String modeleNom;
     private String modeleDescription;
+    private String imageProfilUrl;
     private Integer ordre;
     private Boolean estValider;
     private List<IllustrationResponse> illustrations;

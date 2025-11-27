@@ -15,6 +15,7 @@ public class ModeleEtapeResponse {
     private String nom;
     private String description;
     private Integer ordre;
+    private String imageProfilUrl;
     private List<Integer> specialiteIds;
     private List<String> specialiteLibelles;
     private Long nombreIllustrations;
