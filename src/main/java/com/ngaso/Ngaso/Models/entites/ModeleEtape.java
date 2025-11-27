@@ -21,6 +21,7 @@ public class ModeleEtape {
     @Column(columnDefinition = "TEXT")
     private String description;
     private Integer ordre;
+    private String imageProfilUrl;
 
     @ManyToMany
     @JoinTable(

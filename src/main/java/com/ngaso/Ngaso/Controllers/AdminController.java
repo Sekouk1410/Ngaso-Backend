@@ -133,6 +133,19 @@ public class AdminController {
         return ResponseEntity.ok(adminService.createModeleEtape(request));
     }
 
+    @PostMapping(value = "/modeles-etapes/{modeleId}/image-profil", consumes = {"multipart/form-data"})
+    public ResponseEntity<ModeleEtapeResponse> uploadModeleEtapeImageProfil(
+            @PathVariable Integer modeleId,
+            @RequestPart("image") MultipartFile image
+    ) {
+        return ResponseEntity.ok(adminService.updateModeleEtapeImageProfil(modeleId, image));
+    }
+
+    @GetMapping("/modeles-etapes/{modeleId}/image-profil")
+    public ResponseEntity<String> getModeleEtapeImageProfil(@PathVariable Integer modeleId) {
+        return ResponseEntity.ok(adminService.getModeleEtapeImageProfil(modeleId));
+    }
+
     @GetMapping("/modeles-etapes")
     public ResponseEntity<List<ModeleEtapeResponse>> listModelesEtapes() {
         return ResponseEntity.ok(adminService.listModeleEtapes());

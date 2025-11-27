@@ -199,6 +199,7 @@ public class ProjetService {
                             m != null ? m.getId() : null,
                             m != null ? m.getNom() : null,
                             m != null ? m.getDescription() : null,
+                            m != null ? m.getImageProfilUrl() : null,
                             m != null ? m.getOrdre() : null,
                             e.getEstValider(),
                             ill
@@ -521,6 +522,7 @@ public class ProjetService {
                 m != null ? m.getId() : null,
                 m != null ? m.getNom() : null,
                 m != null ? m.getDescription() : null,
+                m != null ? m.getImageProfilUrl() : null,
                 m != null ? m.getOrdre() : null,
                 saved.getEstValider(),
                 ill

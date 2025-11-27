@@ -339,7 +339,7 @@ public class AdminService {
         List<Integer> ids = saved.getSpecialites().stream().map(Specialite::getId).collect(Collectors.toList());
         List<String> labels = saved.getSpecialites().stream().map(Specialite::getLibelle).collect(Collectors.toList());
         long nombreIllustrations = saved.getIllustrations() != null ? saved.getIllustrations().size() : 0L;
-        return new ModeleEtapeResponse(saved.getId(), saved.getNom(), saved.getDescription(), saved.getOrdre(), ids, labels, nombreIllustrations);
+        return new ModeleEtapeResponse(saved.getId(), saved.getNom(), saved.getDescription(), saved.getOrdre(), saved.getImageProfilUrl(), ids, labels, nombreIllustrations);
     }
 
     @Transactional(readOnly = true)
@@ -358,6 +358,7 @@ public class AdminService {
                     m.getNom(),
                     m.getDescription(),
                     m.getOrdre(),
+                    m.getImageProfilUrl(),
                     ids,
                     labels,
                     nombreIllustrations
@@ -419,6 +420,51 @@ public class AdminService {
             storageService.deleteByPublicUrl(url);
         } catch (Exception ignored) {
             // On ignore les erreurs de suppression de fichier pour ne pas bloquer la suppression logique
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public String getModeleEtapeImageProfil(Integer modeleId) {
+        ModeleEtape modele = modeleEtapeRepository.findById(modeleId)
+                .orElseThrow(() -> new IllegalArgumentException("Modèle d'étape introuvable: " + modeleId));
+        String url = modele.getImageProfilUrl();
+        if (url == null || url.isBlank()) {
+            throw new IllegalArgumentException("Aucune image de profil définie pour ce modèle d'étape");
+        }
+        return url;
+    }
+
+    public ModeleEtapeResponse updateModeleEtapeImageProfil(Integer modeleId, org.springframework.web.multipart.MultipartFile image) {
+        ModeleEtape modele = modeleEtapeRepository.findById(modeleId)
+                .orElseThrow(() -> new IllegalArgumentException("Modèle d'étape introuvable: " + modeleId));
+        if (image == null || image.isEmpty()) {
+            throw new IllegalArgumentException("Image requise");
+        }
+        try {
+            String publicUrl = storageService.storeIllustration(modeleId, image);
+            modele.setImageProfilUrl(publicUrl);
+            ModeleEtape saved = modeleEtapeRepository.save(modele);
+
+            java.util.List<Integer> ids = saved.getSpecialites() != null
+                    ? saved.getSpecialites().stream().map(Specialite::getId).collect(java.util.stream.Collectors.toList())
+                    : java.util.Collections.emptyList();
+            java.util.List<String> labels = saved.getSpecialites() != null
+                    ? saved.getSpecialites().stream().map(Specialite::getLibelle).collect(java.util.stream.Collectors.toList())
+                    : java.util.Collections.emptyList();
+            long nombreIllustrations = saved.getIllustrations() != null ? saved.getIllustrations().size() : 0L;
+
+            return new ModeleEtapeResponse(
+                    saved.getId(),
+                    saved.getNom(),
+                    saved.getDescription(),
+                    saved.getOrdre(),
+                    saved.getImageProfilUrl(),
+                    ids,
+                    labels,
+                    nombreIllustrations
+            );
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("Echec d'enregistrement de l'image de profil: " + ex.getMessage());
         }
     }
 }
