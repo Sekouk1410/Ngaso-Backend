@@ -4,6 +4,7 @@ import com.ngaso.Ngaso.dto.ChangePasswordRequest;
 import com.ngaso.Ngaso.Services.AuthService;
 import com.ngaso.Ngaso.dto.AuthLoginRequest;
 import com.ngaso.Ngaso.dto.AuthLoginResponse;
+import com.ngaso.Ngaso.dto.RefreshTokenRequest;
 import com.ngaso.Ngaso.dto.NoviceSignupRequest;
 import com.ngaso.Ngaso.dto.ProfessionnelSignupRequest;
 import org.springframework.security.core.Authentication;
@@ -40,6 +41,11 @@ public class AuthController {
     @PostMapping(value = "/login", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<AuthLoginResponse> login(@RequestBody AuthLoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping(value = "/refresh", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<AuthLoginResponse> refresh(@RequestBody RefreshTokenRequest request) {
+        return ResponseEntity.ok(authService.refreshToken(request));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
